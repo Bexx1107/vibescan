@@ -1,0 +1,35 @@
+[Unit]
+Description=VibeScan admin (tailnet-only, separate from the public instance)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vibescan
+Group=vibescan
+WorkingDirectory=/home/vibescan/app
+EnvironmentFile=/etc/vibescan/admin.env
+ExecStart=/usr/bin/node /home/vibescan/app/admin/server.js
+Restart=on-failure
+RestartSec=3
+
+# Hardening: this process only needs its own repo dir, write access to data/,
+# and the ability to bind one port. Nothing else.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/vibescan/app/data
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@system-service
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="sl" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VibeScan — Passive Website Quality &amp; Security Index</title>
+<meta name="description" content="Passive automated checker for HTTP security headers, TLS/DNS, GDPR cookies/trackers, Core Web Vitals, accessibility, and SEO." />
+<link rel="canonical" href="https://your-domain.example/" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2.0" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2.0" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=2.0" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2.0" />
+<link rel="alternate icon" href="/favicon.ico?v=2.0" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://your-domain.example/" />
+<meta property="og:title" content="VibeScan — Passive Website Quality &amp; Security Index" />
+<meta property="og:description" content="Passive automated checker for HTTP security headers, TLS/DNS, GDPR cookies/trackers, Core Web Vitals, accessibility, and SEO." />
+<meta property="og:image" content="https://your-domain.example/og-image.png?v=1.1" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="VibeScan — Passive Website Quality &amp; Security Index" />
+<meta name="twitter:description" content="Passive automated checker for HTTP security headers, TLS/DNS, GDPR cookies/trackers, Core Web Vitals, accessibility, and SEO." />
+<meta name="twitter:image" content="https://your-domain.example/og-image.png?v=1.1" />
+<link rel="preload" href="/fonts/red-hat-display-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/red-hat-display-roman-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" as="image" href="/hero-ribbon-mobile.webp?v=11.1" type="image/webp" media="(max-width: 768px)" fetchpriority="high" />
+<link rel="preload" as="image" href="/hero-ribbon.webp?v=11.1" type="image/webp" media="(min-width: 769px)" fetchpriority="high" />
+<link rel="stylesheet" href="/styles.css?v=15.1" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "https://your-domain.example/#app",
+      "name": "VibeScan",
+      "url": "https://your-domain.example/",
+      "applicationCategory": "DeveloperApplication",
+      "description": "Passive automated checker for HTTP security headers, TLS/DNS, GDPR cookies/trackers, Core Web Vitals, accessibility, and SEO.",
+      "operatingSystem": "All",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "publisher": {
+        "@id": "https://your-domain.example/#organization"
+      }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://your-domain.example/#organization",
+      "name": "VibeScan",
+      "url": "https://your-domain.example/",
+      "logo": "https://your-domain.example/og-image.png",
+      "email": "contact@example.com"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://your-domain.example/#website",
+      "url": "https://your-domain.example/",
+      "name": "VibeScan",
+      "description": "Passive Website Quality & Security Index",
+      "publisher": {
+        "@id": "https://your-domain.example/#organization"
+      }
+    }
+  ]
+}
+</script>
+<script src="/theme-init.js?v=11.0"></script>
+</head>
+<body>
+<a href="#board" class="skip-link" data-i18n="skipLink">Preskoči na vsebino</a>
+<div class="terminal-shell">
+  <div class="bg-grain-layer" aria-hidden="true"></div>
+
+  <!-- Top Navigation Bar (Clean & Minimalist 1:1) -->
+  <header class="telemetry-bar">
+    <div class="telemetry-brand">
+      <a href="/" class="brand-link">
+        <span class="brand-name">VIBESCAN</span>
+      </a>
+    </div>
+
+    <!-- Center Desktop Navigation Links -->
+    <nav class="nav-links" aria-label="Main Navigation">
+      <a href="#scanSection" class="nav-item-link" data-i18n="navScanner">Skener</a>
+      <a href="#board" class="nav-item-link" data-i18n="navLeaderboard">Lestvica</a>
+      <a href="#criteriaSection" class="nav-item-link" data-i18n="navCriteria">Metodologija</a>
+    </nav>
+
+    <div class="telemetry-controls">
+      <div class="scope-switch desktop-only" role="group" aria-label="Scope">
+        <button type="button" class="scope-btn active" data-scope="all" id="scopeAllBtn">
+          <span data-i18n="scopeAllShort">VSE</span>
+          <span class="count-tag" id="countAll">0</span>
+        </button>
+        <button type="button" class="scope-btn" data-scope="si" id="scopeSiBtn">
+          <span data-i18n="scopeSiShort">.SI</span>
+          <span class="count-tag" id="countSi">0</span>
+        </button>
+      </div>
+
+      <div class="sys-buttons">
+        <button class="sys-btn lang-switch" id="langSwitch" aria-label="Language">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Domain Scanner Hero -->
+  <section class="hero-scanner-section" id="scanSection">
+    <div class="hero-wave-backdrop" aria-hidden="true">
+      <picture>
+        <source media="(max-width: 768px)" srcset="/hero-ribbon-mobile.webp?v=11.1" type="image/webp" width="1080" height="603" />
+        <img src="/hero-ribbon.webp?v=11.1" alt="" class="hero-wave-3d-img" width="5504" height="3072" fetchpriority="high" decoding="sync" />
+      </picture>
+    </div>
+
+    <div class="hero-content-wrap">
+      <div class="hero-stage-grid">
+        <div class="hero-heading-block">
+          <div class="hero-top-badge" data-i18n="editionBadge">JAVNI INDEKS</div>
+          <h1 class="hero-title" data-i18n="heroTitle"><span class="hero-title-l1">Javni indeks</span><br><span class="hero-title-l2">kakovosti</span></h1>
+          <p class="hero-subtitle" data-i18n="heroSub">Neodvisna pasivna analiza varnostnih glav, GDPR skladnosti, hitrosti in tehnološkega sklada.</p>
+        </div>
+      </div>
+
+      <!-- Floating Elevated White Search Block (1:1 Obvious Link Input Block + Checkboxes) -->
+      <div class="floating-search-card">
+        <form class="search-capsule-form" id="scanForm" autocomplete="off">
+          <div class="search-capsule-input-wrap">
+            <svg class="search-lens-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input id="urlInput" class="search-capsule-field" type="text" inputmode="url" spellcheck="false"
+                   placeholder="vnesi-domeno.si" aria-label="Domain URL" required />
+          </div>
+          <button type="submit" id="scanBtn" class="search-capsule-btn">
+            <span data-i18n="submitButton">Preveri domeno</span>
+            <svg class="btn-arrow-svg" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="4" y1="10" x2="16" y2="10"></line>
+              <polyline points="11 5 16 10 11 15"></polyline>
+            </svg>
+          </button>
+        </form>
+
+        <!-- Scan Options Checkboxes -->
+        <div class="search-options-row">
+          <label class="scan-option-check" for="hideResultsCheck">
+            <input type="checkbox" id="hideResultsCheck" class="scan-option-input" />
+            <span class="scan-option-box" aria-hidden="true">
+              <svg class="scan-option-tick" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="2.5 7.5 5.5 10.5 11.5 3.5"></polyline>
+              </svg>
+            </span>
+            <span class="scan-option-label" data-i18n="optHideResults">Hide Results</span>
+          </label>
+
+          <label class="scan-option-check" for="followRedirectsCheck">
+            <input type="checkbox" id="followRedirectsCheck" class="scan-option-input" checked />
+            <span class="scan-option-box" aria-hidden="true">
+              <svg class="scan-option-tick" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="2.5 7.5 5.5 10.5 11.5 3.5"></polyline>
+              </svg>
+            </span>
+            <span class="scan-option-label" data-i18n="optFollowRedirects">Follow Redirects</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Active Scan Sweep Progress -->
+      <div class="scan-radar-card" id="scanStatus" hidden>
+        <div class="radar-status-row">
+          <span class="radar-blip"></span>
+          <span id="statusText">Skeniram domeno … analiza varnostnih glav in sklada</span>
+        </div>
+        <div class="scan-stepper" id="scanStepper">
+          <span class="step-dot active"></span>
+          <span class="step-dot"></span>
+          <span class="step-dot"></span>
+          <span class="step-dot"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Live Audit Result Split Cockpit (Full-Screen Left/Right Layout matching Landing Page) -->
+  <article class="result-card" id="result" hidden>
+    <!-- High-visibility warning banner if scan encountered WAF / Bot block / degraded capabilities -->
+    <div id="degradedBanner" class="degraded-alert-banner" hidden></div>
+
+    <div class="result-split-layout">
+
+      <!-- LEFT COLUMN: Domain Score Card, 6 Pillars, Clean Spec Sheet & Optional Builder Claim -->
+      <div class="result-col-left">
+        <div class="result-surface-card result-overview-card">
+          <div class="result-header">
+            <div class="result-identity">
+              <h2 class="result-host" id="resultHost"></h2>
+              <span class="result-timestamp" id="resultMeta"></span>
+            </div>
+            <div class="result-score-lockup">
+              <span class="result-score-big" id="resultScore">—</span>
+              <span class="card-grade-badge grade-c result-grade-badge" id="resultGrade">—</span>
+            </div>
+          </div>
+
+          <!-- Category Bars Grid (1-100 General Scores, styled like leaderboard expansion) -->
+          <div class="result-section-block">
+            <div class="result-section-label" data-i18n="domainScores">Ocene po področjih</div>
+            <div class="card-domain-grid result-domain-grid" id="domainBars"></div>
+          </div>
+
+          <!-- Clean Technical Telemetry Grid -->
+          <div class="result-section-block">
+            <div class="result-section-label" data-i18n="telemetryTitle">Tehnični podatki</div>
+            <div class="low-level-telemetry-grid" id="lowLevelTelemetry"></div>
+          </div>
+        </div>
+
+        <!-- Claim & Provenance Form (Hidden when Hide Results is checked) -->
+        <form class="result-surface-card claim-card-box" id="claimForm">
+          <div class="claim-box-head">
+            <h3 data-i18n="claimTitle">Kdo je to zgradil?</h3>
+            <p class="claim-box-sub" data-i18n="claimSubtitle">Povejte nam, kdo je stran zgradil in s čim. Trditve preverimo proti temu, kar skener dejansko vidi.</p>
+          </div>
+
+          <div class="claim-grid">
+            <div class="claim-field full-width">
+              <label data-i18n="fieldKind">Kdo je zgradil</label>
+              <div class="kind-segmented" id="kindSelector" role="radiogroup">
+                <button type="button" class="kind-pill-btn" data-value="agency" data-i18n="kindAgency">Agencija</button>
+                <button type="button" class="kind-pill-btn" data-value="solo" data-i18n="kindSolo">Samostojni razvijalec</button>
+                <button type="button" class="kind-pill-btn" data-value="inhouse" data-i18n="kindInhouse">Interna ekipa</button>
+                <button type="button" class="kind-pill-btn" data-value="ai" data-i18n="kindAi">Zgrajeno z AI</button>
+                <button type="button" class="kind-pill-btn" data-value="unknown" data-i18n="kindUnknown">Ne vem</button>
+              </div>
+              <input type="hidden" id="kind" value="unknown" required />
+            </div>
+
+            <div class="claim-field" id="fieldBuilderName">
+              <label for="builderName" data-i18n="fieldName">Ime agencije ali razvijalca</label>
+              <input id="builderName" class="form-input" type="text" maxlength="120" placeholder="npr. Futura, Renderspace" data-i18n-attr="placeholder:placeholderAgency" autocomplete="organization" />
+              <div class="chip-suggestions" id="agencyChips" hidden>
+                <button type="button" class="chip-hint" data-for="builderName">Renderspace</button>
+                <button type="button" class="chip-hint" data-for="builderName">Futura</button>
+                <button type="button" class="chip-hint" data-for="builderName">Pristop</button>
+              </div>
+            </div>
+
+            <div class="claim-field">
+              <label for="platform" data-i18n="fieldPlatform">Platforma</label>
+              <select id="platform" class="form-select">
+                <option value="" data-i18n="selectPlatform">— Izberi platformo —</option>
+                <option value="wordpress">WordPress</option>
+                <option value="shopify">Shopify</option>
+                <option value="webflow">Webflow</option>
+                <option value="wix">Wix</option>
+                <option value="squarespace">Squarespace</option>
+                <option value="nextjs">Next.js</option>
+                <option value="nuxt">Nuxt</option>
+                <option value="astro">Astro</option>
+                <option value="custom">Custom Code</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
+
+            <div class="claim-field" id="fieldHarness">
+              <label for="harness" data-i18n="fieldHarness">Orodje (neobvezno)</label>
+              <select id="harness" class="form-select claim-select">
+                <option value="" data-i18n="selectHarness">— Brez / Neznano / Izberi —</option>
+                <optgroup label="AI Code Editors & IDEs">
+                  <option value="Cursor">Cursor</option>
+                  <option value="Windsurf">Windsurf (Codeium)</option>
+                  <option value="Trae">Trae (ByteDance)</option>
+                  <option value="Zed AI">Zed AI</option>
+                  <option value="GitHub Copilot">GitHub Copilot / Workspace</option>
+                  <option value="PearAI">PearAI</option>
+                  <option value="Void Editor">Void Editor</option>
+                </optgroup>
+                <optgroup label="Autonomous Coding Agents & CLI">
+                  <option value="Claude Code">Claude Code (Anthropic CLI)</option>
+                  <option value="Antigravity">Antigravity (Google DeepMind)</option>
+                  <option value="OpenAI Operator">OpenAI Operator / Codex CLI</option>
+                  <option value="Devin">Devin (Cognition)</option>
+                  <option value="Aider">Aider</option>
+                  <option value="Cline">Cline (VS Code Agent)</option>
+                  <option value="Roo Code">Roo Code</option>
+                  <option value="OpenHands">OpenHands (All-Hands)</option>
+                  <option value="SWE-agent">SWE-agent</option>
+                  <option value="Goose">Goose (Block)</option>
+                  <option value="Amp">Amp (Sourcegraph)</option>
+                  <option value="Pythagora">Pythagora / GPT Pilot</option>
+                  <option value="Sweep">Sweep</option>
+                </optgroup>
+                <optgroup label="Web & Full-Stack App Builders">
+                  <option value="v0">v0 by Vercel</option>
+                  <option value="Lovable">Lovable</option>
+                  <option value="Bolt.new">Bolt.new (StackBlitz)</option>
+                  <option value="Replit Agent">Replit Agent</option>
+                  <option value="Marblism">Marblism</option>
+                  <option value="Create.xyz">Create.xyz</option>
+                  <option value="Softgen">Softgen</option>
+                  <option value="Tempo Labs">Tempo Labs</option>
+                  <option value="Magic Patterns">Magic Patterns</option>
+                  <option value="Webcrumbs">Webcrumbs</option>
+                  <option value="B12">B12 AI</option>
+                  <option value="Hostinger AI">Hostinger AI</option>
+                  <option value="Framer AI">Framer AI</option>
+                </optgroup>
+                <optgroup label="Other">
+                  <option value="custom">Other (custom) …</option>
+                </optgroup>
+              </select>
+              <input id="harnessCustom" type="text" class="custom-field-input form-input" placeholder="Custom harness …" maxlength="60" hidden />
+            </div>
+
+            <div class="claim-field" id="fieldModel">
+              <label for="model" data-i18n="fieldModel">Model (neobvezno)</label>
+              <select id="model" class="form-select claim-select">
+                <option value="" data-i18n="selectModel">— Brez / Neznano / Izberi —</option>
+                <optgroup label="OpenAI">
+                  <option value="GPT-5.6">GPT-5.6</option>
+                  <option value="GPT-5.5">GPT-5.5</option>
+                  <option value="GPT-5.4">GPT-5.4</option>
+                  <option value="GPT-5 Pro">GPT-5 Pro</option>
+                  <option value="GPT-5-Codex">GPT-5-Codex</option>
+                  <option value="OpenAI o4-mini">OpenAI o4-mini</option>
+                  <option value="OpenAI o3-pro">OpenAI o3-pro</option>
+                  <option value="OpenAI o3-max">OpenAI o3-max</option>
+                  <option value="OpenAI o3">OpenAI o3</option>
+                  <option value="OpenAI o3-mini">OpenAI o3-mini</option>
+                  <option value="OpenAI o1">OpenAI o1</option>
+                  <option value="OpenAI o1-pro">OpenAI o1-pro</option>
+                  <option value="GPT-4.5 Orion">GPT-4.5 Orion</option>
+                  <option value="GPT-4o">GPT-4o</option>
+                </optgroup>
+                <optgroup label="Anthropic Claude">
+                  <option value="Claude 5.5 Opus">Claude 5.5 Opus</option>
+                  <option value="Claude 5.5 Sonnet">Claude 5.5 Sonnet</option>
+                  <option value="Claude 5.5 Haiku">Claude 5.5 Haiku</option>
+                  <option value="Claude 4.7 Sonnet">Claude 4.7 Sonnet</option>
+                  <option value="Claude 4.5 Sonnet">Claude 4.5 Sonnet</option>
+                  <option value="Claude 4 Opus">Claude 4 Opus</option>
+                  <option value="Claude 4 Sonnet">Claude 4 Sonnet</option>
+                  <option value="Claude 3.7 Sonnet">Claude 3.7 Sonnet (Thinking)</option>
+                  <option value="Claude 3.5 Sonnet">Claude 3.5 Sonnet</option>
+                  <option value="Claude 3.5 Haiku">Claude 3.5 Haiku</option>
+                </optgroup>
+                <optgroup label="Google Gemini">
+                  <option value="Gemini 4 Argon (Preview)">Gemini 4 Argon (Preview)</option>
+                  <option value="Gemini 3.8 Flash">Gemini 3.8 Flash</option>
+                  <option value="Gemini 3.1 Pro">Gemini 3.1 Pro</option>
+                  <option value="Gemini 3 Pro">Gemini 3 Pro</option>
+                  <option value="Gemini 2.5 Pro">Gemini 2.5 Pro</option>
+                  <option value="Gemini 2.5 Flash">Gemini 2.5 Flash</option>
+                  <option value="Gemini 2.0 Flash Thinking">Gemini 2.0 Flash Thinking</option>
+                  <option value="Gemini 2.0 Pro">Gemini 2.0 Pro</option>
+                </optgroup>
+                <optgroup label="DeepSeek">
+                  <option value="DeepSeek-V4.1">DeepSeek-V4.1</option>
+                  <option value="DeepSeek-V4">DeepSeek-V4</option>
+                  <option value="DeepSeek-R2">DeepSeek-R2</option>
+                  <option value="DeepSeek-R1">DeepSeek-R1</option>
+                  <option value="DeepSeek-V3">DeepSeek-V3</option>
+                  <option value="DeepSeek-Coder-V2">DeepSeek-Coder-V2</option>
+                  <option value="DeepSeek-Janus-Pro">DeepSeek-Janus-Pro</option>
+                </optgroup>
+                <optgroup label="xAI (Grok)">
+                  <option value="Grok 3">Grok 3</option>
+                  <option value="Grok 3 mini">Grok 3 mini</option>
+                  <option value="Grok 2">Grok 2</option>
+                </optgroup>
+                <optgroup label="Meta Llama & Open Weights">
+                  <option value="Llama 4 (400B)">Llama 4 (400B)</option>
+                  <option value="Llama 4 Scout">Llama 4 Scout</option>
+                  <option value="Llama 3.3 70B">Llama 3.3 70B</option>
+                  <option value="Llama 3.2 3B/11B">Llama 3.2</option>
+                  <option value="Llama 3.1 405B">Llama 3.1 405B</option>
+                  <option value="Qwen 2.5 Coder 32B">Qwen 2.5 Coder 32B</option>
+                  <option value="Qwen 2.5 Max">Qwen 2.5 Max</option>
+                  <option value="QwQ-32B-Preview">QwQ-32B-Preview</option>
+                  <option value="Mistral Large 2">Mistral Large 2</option>
+                  <option value="Pixtral 12B">Pixtral 12B</option>
+                  <option value="Codestral 2501">Codestral 2501</option>
+                </optgroup>
+                <optgroup label="Other">
+                  <option value="custom">Other (custom) …</option>
+                </optgroup>
+              </select>
+              <input id="modelCustom" type="text" class="custom-field-input form-input" placeholder="Custom model …" maxlength="60" hidden />
+            </div>
+          </div>
+
+          <div class="claim-footer">
+            <button type="submit" class="search-capsule-btn claim-submit-btn" id="claimBtn" data-i18n="claimSubmit">Objavi trditev</button>
+          </div>
+          <div class="verdict-banner" id="verdict" hidden></div>
+        </form>
+      </div>
+
+      <!-- RIGHT COLUMN: Non-Doom-Scrolling Interactive Findings Inspector -->
+      <div class="result-col-right">
+        <div class="result-surface-card findings-card" id="findingsBlock">
+          <div class="findings-head-row">
+            <div class="findings-head-titles">
+              <h3 class="findings-heading" data-i18n="findingsTitle">Ugotovitve pregleda</h3>
+              <p class="findings-ephemeral-sub" data-i18n="ephemeralSub">Podrobnosti so prikazane samo v vaši trenutni seji. Javno se hranijo le ocene 1–100.</p>
+            </div>
+            <div class="findings-summary-badges" id="findingsSummaryBadges"></div>
+          </div>
+          <div class="findings-filter-bar-wrap">
+            <div class="filter-pills-row findings-filter-tabs" id="findingsFilterTabs"></div>
+            <button type="button" class="btn-copy-all-plan" id="btnCopyAllPlan" hidden>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <span data-i18n="copyPlanBtn">Kopiraj načrt za AI</span>
+            </button>
+          </div>
+          <div class="findings-privacy-callout" id="findingsPrivacyCallout" hidden>
+            <p>Technical vulnerability reports are restricted by default.</p>
+            <button type="button" class="btn-reveal-findings" id="btnRevealFindings">Reveal full findings</button>
+          </div>
+          <ul class="findings-list deep-findings-list" id="resultFindings"></ul>
+        </div>
+      </div>
+
+    </div>
+  </article>
+
+  <!-- Leaderboard Table Section -->
+  <main class="matrix-section" id="board">
+    
+    <!-- Consolidated Filter Cluster -->
+    <div class="leaderboard-filter-cluster">
+      <!-- Row 1: Primary views (Best, Worst, Recent, Wall Of Slop, By agency...) -->
+      <div class="filter-pills-row" id="tabs" role="tablist"></div>
+
+      <!-- Creators sub-cohort subrow for Avtor: [ Agencije/Developer ] [ AI modeli ] [ Orodja/Harnessi ] -->
+      <div class="filter-pills-subrow" id="creatorsSubrow" hidden>
+        <button type="button" class="subrow-pill active" id="subCohortAgency" data-cohort="agency" data-i18n="creatorsAgencies">Agencije/Developer</button>
+        <button type="button" class="subrow-pill" id="subCohortModel" data-cohort="model" data-i18n="creatorsModels">AI modeli</button>
+        <button type="button" class="subrow-pill" id="subCohortHarness" data-cohort="harness" data-i18n="creatorsHarnesses">Orodja/Harnessi</button>
+      </div>
+
+      <!-- Inline Search / Filter input -->
+      <div class="filter-search-box">
+        <svg class="search-mag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="search" id="tableSearch" placeholder="Filtriraj po domeni ali orodju …" aria-label="Filter" data-i18n-attr="placeholder:searchPlaceholder" />
+      </div>
+    </div>
+
+    <!-- Active Filter Title Lockup & Counter -->
+    <div class="matrix-header">
+      <div class="matrix-title-lockup">
+        <span class="active-sector" id="boardTitle">Najboljše</span>
+        <span class="active-scope" id="boardSub"></span>
+      </div>
+      <span class="matrix-counter" id="boardCount">0 domen</span>
+    </div>
+
+    <!-- FLOATING LEADERBOARD CARDS STACK (1:1 with Phone 2) -->
+    <div class="floating-cards-stack" id="rows">
+      <div class="floating-site-card skeleton-card" aria-hidden="true"></div>
+      <div class="floating-site-card skeleton-card" aria-hidden="true"></div>
+      <div class="floating-site-card skeleton-card" aria-hidden="true"></div>
+      <div class="floating-site-card skeleton-card" aria-hidden="true"></div>
+      <div class="floating-site-card skeleton-card" aria-hidden="true"></div>
+    </div>
+  </main>
+
+  <!-- Scoring Methodology -->
+  <section class="scoring-ledger-section" id="criteriaSection">
+    <div class="ledger-layout">
+      <div class="ledger-intro">
+        <h2 class="ledger-title" data-i18n="critTitle">Metodologija točkovanja</h2>
+        <p class="ledger-sub" data-i18n="critSub">Dvonivojsko pasivno preverjanje (HTTP/TLS/DNS odziv + Headless Chromium DOM). Podrobne ugotovitve so prikazane samo v trenutni seji brskalnika; na strežniku se javno hranijo samo številčne ocene (0–100).</p>
+      </div>
+      <dl class="ledger-spec-list">
+        <div class="ledger-spec-row">
+          <dt class="ledger-spec-term" data-i18n="crit1Title">Varnost</dt>
+          <dd class="ledger-spec-desc" data-i18n="crit1Text">Pasivni pregled TLS certifikata in šifer, varnostnih HTTP glav (HSTS, CSP, X-Frame-Options, COOP/CORP, Referrer/Permissions-Policy), zastavic piškotkov, DNS zapisov (SPF/DMARC/CAA/DNSSEC) in javnih podatkov o odprtih vratih (Shodan InternetDB).</dd>
+        </div>
+        <div class="ledger-spec-row">
+          <dt class="ledger-spec-term" data-i18n="crit2Title">GDPR</dt>
+          <dd class="ledger-spec-desc" data-i18n="crit2Text">Preverjanje piškotkov in zunanjih sledilcev ob prvem nalaganju (pred privolitvijo), prisotnosti CMP pasice, lokacije zunanjih domen (EU/ZDA) in osnovnih pravnih povezav (zasebnost, pogoji, impresum).</dd>
+        </div>
+        <div class="ledger-spec-row">
+          <dt class="ledger-spec-term" data-i18n="crit3Title">CWV</dt>
+          <dd class="ledger-spec-desc" data-i18n="crit3Text">Laboratorijske meritve v Headless Chromiumu preko CDP: LCP, CLS, TBT (kot približek za odzivnost), FCP, TTFB ter velikost prenosa in kompresija (Brotli/Gzip), ocenjeno po fiksnih pragih Core Web Vitals.</dd>
+        </div>
+        <div class="ledger-spec-row">
+          <dt class="ledger-spec-term" data-i18n="crit4Title">A11y</dt>
+          <dd class="ledger-spec-desc" data-i18n="crit4Text">Osnovni statični in izrisani (post-JS) WCAG 2.2 pregledi po meri: izračunan barvni kontrast, oznake obrazcev in gumbov (ARIA/label), alt opisi slik, semantične regije in fokus tipkovnice.</dd>
+        </div>
+        <div class="ledger-spec-row">
+          <dt class="ledger-spec-term" data-i18n="crit5Title">SEO</dt>
+          <dd class="ledger-spec-desc" data-i18n="crit5Text">Preverjanje naslovov, meta opisov, kanoničnih povezav, OpenGraph oznak, JSON-LD strukturiranih podatkov, robots.txt, sitemap.xml, llms.txt in pravil za AI pajke.</dd>
+        </div>
+        <div class="ledger-spec-row">
+          <dt class="ledger-spec-term" data-i18n="crit6Title">Koda</dt>
+          <dd class="ledger-spec-desc" data-i18n="crit6Text">Higiena frontenda: blokirajoče skripte, pregled javnih JS paketov za morebitno puščanje ključev, SRI atributi tretjih skript, zastarele oznake, velikost HTML-ja in preverjanje mrtvih povezav.</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- Site Audit Inspection Drawer -->
+  <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+  <aside class="site-drawer" id="siteDrawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div class="drawer-title-group">
+        <span class="drawer-eyebrow" data-i18n="drawerTitle">PODROBNA ANALIZA DOMENE</span>
+        <h3 class="drawer-host" id="drawerHost">—</h3>
+      </div>
+      <button type="button" class="drawer-close" id="drawerClose" aria-label="Close">×</button>
+    </div>
+
+    <div class="drawer-body" id="drawerBody">
+      <div class="drawer-score-hero">
+        <div class="score-pill-card">
+          <div class="score-grade-pill" id="drawerGrade">—</div>
+          <div class="score-number-group">
+            <span class="score-value-big" id="drawerScore">—</span>
+            <span class="score-max-sub">/100</span>
+          </div>
+        </div>
+        <div class="drawer-site-meta">
+          <div class="meta-row"><span class="meta-lbl">URL:</span> <a id="drawerUrl" href="#" target="_blank" rel="noopener"></a></div>
+          <div class="meta-row"><span class="meta-lbl" data-i18n="lastScan">Last Audit:</span> <span id="drawerLastScan">—</span></div>
+          <div class="meta-row"><span class="meta-lbl" data-i18n="scans">Audit Count:</span> <span id="drawerScanCount">—</span></div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <h4 data-i18n="domainScores">Diagnostic Spectrum</h4>
+        <div class="domain-bars-grid" id="drawerDomainBars"></div>
+      </div>
+
+      <div class="drawer-section">
+        <h4 data-i18n="builderTitle">Builder Claims & Signatures</h4>
+        <div class="drawer-claim-card" id="drawerClaimCard"></div>
+      </div>
+
+      <div class="drawer-section">
+        <h4 data-i18n="historyTitle">Telemetry History</h4>
+        <div class="history-list" id="drawerHistoryList"></div>
+      </div>
+
+      <div class="drawer-actions">
+        <a href="#scanForm" class="btn-primary" id="drawerRescanBtn">Rescan Domain</a>
+        <button type="button" class="btn-subtle" id="drawerRemovalBtn" data-i18n="removal">Request Removal</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Removal Request Modal -->
+  <dialog class="modal-dialog" id="removalModal">
+    <form method="dialog" class="modal-form" id="removalForm">
+      <h3 data-i18n="removal">Odstranitev domene</h3>
+      <p class="modal-sub" data-i18n="removalSub">Če ne želite, da se vaša domena javno prikazuje v registru, jo lahko kadarkoli trajno odstranite. Brez vprašanj, brez e-maila.</p>
+      <div class="claim-field">
+        <label for="removalSiteHost" data-i18n="removalHostLabel">Domena za izbris</label>
+        <input type="text" id="removalSiteHost" class="form-input" required placeholder="vnesi-domeno.si" />
+      </div>
+      <div class="modal-buttons">
+        <button type="button" class="btn-subtle" id="modalCancelBtn" data-i18n="cancel">Prekliči</button>
+        <button type="submit" class="btn-primary" id="modalSubmitBtn" data-i18n="submitRemoval">Takoj odstrani domeno</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Site Footer -->
+  <footer class="product-footer" id="siteFooter">
+    <div class="footer-single-bar">
+      <div class="footer-brand-inline">
+        <span class="footer-wordmark">VIBESCAN</span>
+        <span class="footer-sep">·</span>
+        <p class="footer-disclaimer" data-i18n="disclaimer">Avtomatizirana pasivna analiza javno dostopnih DNS, TLS, HTTP glav, sledilcev in tehnološkega sklada.</p>
+      </div>
+      <div class="footer-actions-inline">
+        <a href="#scanSection" class="footer-btn-link" data-i18n="footerScanner">Skener</a>
+        <a href="#board" class="footer-btn-link" data-i18n="footerLeaderboard">Lestvica</a>
+        <a href="#criteriaSection" class="footer-btn-link" data-i18n="footerCriteria">Metodologija</a>
+        <a href="/privacy.html" class="footer-btn-link" id="footerPrivacyBtn" data-i18n="footerPrivacy">Zasebnost</a>
+        <a href="/terms.html" class="footer-btn-link" id="footerTermsBtn" data-i18n="footerTerms">Pogoji</a>
+        <a href="/imprint.html" class="footer-btn-link" id="footerImprintBtn" data-i18n="footerImprint">Pravno obvestilo</a>
+        <a href="/imprint.html#dostopnost" class="footer-btn-link" id="footerA11yBtn" data-i18n="footerA11y">Izjava o dostopnosti</a>
+        <button type="button" class="footer-btn-link" id="footerRemovalBtn" data-i18n="footerRemoval">Odstranitev domene</button>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script src="/i18n.js?v=15.1" defer></script>
+<script src="/icons.js?v=15.1" defer></script>
+<script src="/app.js?v=15.1" defer></script>
+</body>
+</html>

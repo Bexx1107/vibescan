@@ -1,0 +1,26 @@
+# VibeScan
+
+> Passive web configuration checker and public leaderboard (built on Node.js with built-in node:sqlite and optional headless Chromium). Evaluates public websites across 6 domains: Security, Privacy & GDPR, Performance (CWV lab), Accessibility, SEO, and Code Hygiene.
+
+## Overview
+VibeScan runs automated passive checks and produces 0–100 scores and grades (A–F). In public mode, full finding details remain in memory only for the active browser session; only numeric summary scores, tech-stack tags, and user-submitted claims are persisted to the leaderboard database.
+
+- [Public Leaderboard](https://your-domain.example/)
+- [Leaderboard Index](https://your-domain.example/leaderboard)
+- [Health Check](https://your-domain.example/api/health)
+
+## Audit Domains
+- **Varnost (Security)**: TLS certificate and cipher inspection, HTTP security headers (HSTS, CSP, X-Frame-Options, COOP/CORP, Referrer-Policy, Permissions-Policy), cookie flags (Secure, HttpOnly, SameSite), DNS checks (SPF, DMARC, CAA, DNSSEC), and passive port/CVE lookup via Shodan InternetDB.
+- **Zasebnost & GDPR (Privacy & Compliance)**: Cookies and third-party tracker requests before user consent, CMP banner detection, third-party host jurisdiction hints (EU/US), and basic legal notice links.
+- **Hitrost (Performance & CWV lab)**: Headless Chromium CDP lab metrics (LCP, CLS, TBT as a lab proxy for responsiveness, FCP, TTFB, payload size, and Brotli/Gzip compression) plus optional Google CrUX field data if an API key is configured.
+- **Koda (Frontend Hygiene)**: Render-blocking scripts, public JS bundle secret-pattern scan, third-party SRI coverage, deprecated markup checks, HTML size, and broken links.
+- **SEO**: Titles, meta descriptions, canonical links, OpenGraph tags, JSON-LD parsing, `robots.txt` AI crawler rules, `sitemap.xml`, and `/llms.txt` discovery.
+- **Dostopnost (Accessibility)**: Custom static and Chromium-rendered DOM checks inspired by WCAG 2.2 (computed color contrast, form labels, accessible button/link names, image alt attributes, landmark regions, focus rules).
+
+## Public API Endpoints
+- `GET /` — Public interactive leaderboard and domain scanner UI.
+- `GET /api/leaderboard` — Paginated leaderboard feed of scored domains.
+- `GET /api/leaderboard/stats` — Summary counts and filter breakdowns.
+- `GET /api/leaderboard/site/:host` — Stored numeric scores, score history, and builder claims for a specific domain.
+- `POST /api/leaderboard/submit` — Queue a passive public domain scan (rate-limited per IP).
+- `GET /api/health` — Service health and capability status.

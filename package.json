@@ -1,0 +1,20 @@
+{
+  "name": "vibescan",
+  "version": "0.1.0",
+  "private": false,
+  "license": "MIT",
+  "description": "Self-hosted passive website checker and public leaderboard using Node.js built-ins (no npm runtime dependencies).",
+  "repository": "https://github.com/Bexx1107/vibescan",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "admin": "node admin/server.js",
+    "test": "node --test test/*.test.js",
+    "migrate": "node tools/migrate-leaderboard.js",
+    "smoke": "bash test.sh"
+  },
+  "engines": {
+    "node": ">=22.5"
+  }
+}

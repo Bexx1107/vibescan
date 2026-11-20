@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VibeScan — Security, Privacy & Performance Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #090A0F;
+    --bg-elev: #11141E;
+    --bg-elev-2: #181C2A;
+    --stroke: rgba(255,255,255,.07);
+    --stroke-strong: rgba(255,255,255,.14);
+    --text: #F8FAFC;
+    --text-dim: #94A3B8;
+    --text-faint: #64748B;
+    --accent: #E11D48;
+    --critical: #EF4444;
+    --high: #F59E0B;
+    --medium: #EAB308;
+    --low: #38BDF8;
+    --info: #94A3B8;
+    --ok: #10B981;
+    --radius: 18px;
+    --radius-sm: 12px;
+    --blur: saturate(180%) blur(20px);
+    --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, "SF Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.015em;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 40px 24px 96px; }
+
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .logo {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: #E11D48;
+    display: grid; place-items: center; font-weight: 800; font-size: 20px;
+    box-shadow: 0 4px 14px rgba(225,29,72,.3), inset 0 1px 0 rgba(255,255,255,.3);
+    color: #fff;
+  }
+  h1 { font-size: 25px; font-weight: 750; margin: 0; letter-spacing: -0.025em; }
+  .sub { color: var(--text-dim); font-size: 13px; margin-top: 2px; }
+  .badge {
+    margin-left: auto; font-size: 11px; color: var(--text-dim);
+    border: 1px solid var(--stroke); border-radius: 999px; padding: 4px 10px;
+    background: rgba(255,255,255,.02);
+  }
+
+  .searchbar {
+    margin-top: 32px;
+    display: flex; gap: 12px; align-items: center;
+    background: var(--bg-elev);
+    border: 1px solid var(--stroke);
+    border-radius: var(--radius);
+    padding: 8px 8px 8px 18px;
+    box-shadow: 0 25px 60px -15px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.05);
+    transition: border-color .25s ease, box-shadow .25s ease, transform .2s ease;
+  }
+  .searchbar:focus-within {
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 25px 60px -15px rgba(0,0,0,.7), 0 0 0 3px rgba(255, 255, 255, 0.08);
+  }
+  .searchbar input {
+    flex: 1; background: transparent; border: 0; outline: 0;
+    color: var(--text); font-size: 16px; font-family: var(--font); padding: 12px 4px;
+    letter-spacing: -0.01em;
+  }
+  .searchbar input::placeholder { color: var(--text-faint); }
+  button.primary {
+    appearance: none; border: 0; cursor: pointer;
+    background: #FFFFFF;
+    color: #07080A; font-weight: 700; font-size: 15px; font-family: var(--font);
+    padding: 13px 26px; border-radius: 12px; letter-spacing: -0.01em;
+    box-shadow: 0 4px 14px rgba(0,0,0,.3);
+    transition: transform .15s cubic-bezier(.2,.8,.2,1), filter .2s ease, box-shadow .2s;
+    white-space: nowrap;
+  }
+  button.primary:hover { background: #E11D48; color: #FFFFFF; box-shadow: 0 6px 20px rgba(225,29,72,.4); }
+  button.primary:active { transform: scale(.97); }
+  button.primary:disabled { opacity: .5; cursor: default; transform: none; }
+
+  .hint { color: var(--text-faint); font-size: 12.5px; margin-top: 12px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .hint kbd { font-family: var(--mono); background: var(--bg-elev-2); border: 1px solid var(--stroke); border-radius: 6px; padding: 2px 7px; font-size: 11px; color: var(--text-dim); }
+
+  /* progress */
+  .progress { margin-top: 34px; display: none; }
+  .progress.on { display: block; animation: rise .4s cubic-bezier(.2,.8,.2,1); }
+  .prog-track { height: 5px; border-radius: 999px; background: var(--bg-elev-2); overflow: hidden; }
+  .prog-fill { height: 100%; width: 0%; border-radius: 999px; background: #E11D48; transition: width .5s cubic-bezier(.2,.8,.2,1); }
+  .prog-label { display: flex; justify-content: space-between; color: var(--text-dim); font-size: 12.5px; margin-top: 10px; font-weight: 500; }
+
+  /* results */
+  .results { display: none; margin-top: 40px; }
+  .results.on { display: block; animation: rise .5s cubic-bezier(.2,.8,.2,1); }
+
+  .summary {
+    display: grid; grid-template-columns: 190px 1fr; gap: 24px; align-items: center;
+    background: linear-gradient(180deg, rgba(255,255,255,.03) 0%, rgba(255,255,255,.01) 100%), var(--bg-elev);
+    border: 1px solid var(--stroke-strong); border-radius: var(--radius);
+    padding: 26px; box-shadow: 0 25px 60px -15px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .ring { position: relative; width: 150px; height: 150px; margin: 0 auto; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring .val { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .ring .score { font-size: 44px; font-weight: 800; letter-spacing: -0.035em; line-height: 1; }
+  .ring .grade { font-size: 11.5px; color: var(--text-dim); margin-top: 4px; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; }
+  .target-info h2 { margin: 0 0 4px; font-size: 19px; font-weight: 620; word-break: break-all; }
+  .target-info .url { color: var(--text-dim); font-size: 12.5px; font-family: var(--mono); word-break: break-all; }
+  .counts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    border-radius: 999px; padding: 6px 13px; font-size: 12.5px; font-weight: 550;
+    border: 1px solid var(--stroke); background: rgba(255,255,255,.02);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .toggle { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; color: var(--text-dim); font-size: 12.5px; user-select: none; }
+  .toggle input { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; margin: 26px 0 14px; flex-wrap: wrap; }
+  .tab {
+    border: 1px solid var(--stroke); background: transparent; color: var(--text-dim);
+    padding: 7px 14px; border-radius: 999px; font-size: 13px; cursor: pointer; font-family: var(--font);
+    transition: all .15s ease;
+  }
+  .tab:hover { color: var(--text); border-color: var(--stroke-strong); }
+  .tab.active { color: var(--text); background: rgba(91,140,255,.15); border-color: rgba(91,140,255,.45); }
+  .toolbar .spacer { flex: 1; }
+  button.ghost {
+    border: 1px solid var(--stroke); background: transparent; color: var(--text-dim);
+    padding: 7px 14px; border-radius: 999px; font-size: 13px; cursor: pointer; font-family: var(--font);
+    transition: all .15s ease;
+  }
+  button.ghost:hover { color: var(--text); border-color: var(--stroke-strong); }
+
+  .list { display: flex; flex-direction: column; gap: 12px; }
+  .finding {
+    background: linear-gradient(180deg, rgba(255,255,255,.02) 0%, transparent 100%), var(--bg-elev);
+    border: 1px solid var(--stroke); border-radius: var(--radius-sm);
+    padding: 0; overflow: hidden; transition: border-color .2s ease, box-shadow .2s ease, transform .15s ease;
+  }
+  .finding:hover { border-color: var(--stroke-strong); box-shadow: 0 8px 24px -8px rgba(0,0,0,.5); }
+  .finding-head { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; cursor: pointer; }
+  .sev {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 8px; white-space: nowrap; margin-top: 1px;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .sev.critical { background: rgba(239,68,68,.16); color: #F87171; border: 1px solid rgba(239,68,68,.3); }
+  .sev.high { background: rgba(245,158,11,.16); color: #FBBF24; border: 1px solid rgba(245,158,11,.3); }
+  .sev.medium { background: rgba(234,179,8,.14); color: #FACC15; border: 1px solid rgba(234,179,8,.25); }
+  .sev.low { background: rgba(56,189,248,.14); color: #38BDF8; border: 1px solid rgba(56,189,248,.25); }
+  .sev.info { background: rgba(148,163,184,.14); color: #94A3B8; border: 1px solid rgba(148,163,184,.2); }
+  .f-title { font-size: 15px; font-weight: 600; line-height: 1.4; flex: 1; letter-spacing: -0.01em; }
+  .f-domain { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .08em; margin-top: 4px; font-weight: 600; }
+  .chev { color: var(--text-faint); transition: transform .25s cubic-bezier(.2,.8,.2,1); margin-top: 4px; }
+  .finding.open .chev { transform: rotate(90deg); }
+  .finding-body { display: none; padding: 0 18px 18px; }
+  .finding.open .finding-body { display: block; animation: rise .3s ease; }
+  .finding-body .detail { color: var(--text-dim); font-size: 14px; line-height: 1.6; margin-bottom: 14px; }
+  .fix {
+    background: rgba(16,185,129,.07); border: 1px solid rgba(16,185,129,.25); border-left: 4px solid var(--ok);
+    border-radius: 10px; padding: 13px 16px; font-size: 13.5px; line-height: 1.55; color: #D1FAE5;
+  }
+  .fix b { color: #34D399; font-weight: 700; }
+  .evidence {
+    margin-top: 12px; font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+    background: #0a0a0e; border: 1px solid var(--stroke); border-radius: 9px; padding: 11px 13px;
+    white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow: auto;
+  }
+  .f-actions { margin-top: 12px; display: flex; gap: 8px; }
+  .locations {
+    margin-bottom: 12px; border: 1px solid rgba(74,158,255,.22); border-radius: 10px;
+    background: rgba(74,158,255,.05); padding: 11px 13px;
+  }
+  .locations .k {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+    color: #7db4ff; margin-bottom: 8px; font-weight: 600;
+  }
+  .locations ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+  .locations li { border-left: 2px solid rgba(74,158,255,.35); padding-left: 10px; }
+  .loc-sel {
+    font-family: var(--mono); font-size: 12px; color: #ffd479; word-break: break-all;
+    background: #0a0a0e; border: 1px solid var(--stroke); border-radius: 6px; padding: 2px 6px;
+  }
+  .loc-meta { font-size: 12px; color: var(--text-dim); margin-top: 5px; }
+  .loc-html {
+    margin: 6px 0 0; font-family: var(--mono); font-size: 11.5px; color: var(--text-faint);
+    background: #0a0a0e; border: 1px solid var(--stroke); border-radius: 6px; padding: 7px 9px;
+    white-space: pre-wrap; word-break: break-all; max-height: 120px; overflow: auto;
+  }
+
+  .explain {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;
+  }
+  @media (max-width: 620px) { .explain { grid-template-columns: 1fr; } }
+  .explain .cell {
+    background: var(--bg-elev-2); border: 1px solid var(--stroke); border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .explain .cell .k {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--text-faint); margin-bottom: 5px; font-weight: 600;
+  }
+  .explain .cell .v { font-size: 13px; line-height: 1.45; color: var(--text-dim); }
+  .explain .cell.worst { border-color: rgba(255,69,58,.28); background: rgba(255,69,58,.06); }
+  .explain .cell.worst .k { color: #ff7b73; }
+  .explain .cell.worst .v { color: #ffc9c5; }
+
+  .exploit {
+    margin: 12px 0; border: 1px solid rgba(255,159,10,.30); border-radius: 10px;
+    background: rgba(255,159,10,.05); padding: 12px 14px;
+  }
+  .exploit .k {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em;
+    color: #ffb84d; font-weight: 700; margin-bottom: 8px;
+  }
+  .exploit ol { margin: 0; padding-left: 20px; }
+  .exploit li {
+    font-size: 13px; line-height: 1.5; color: var(--text-dim); margin-bottom: 6px;
+  }
+  .exploit code {
+    font-family: var(--mono); font-size: 11.5px; color: #ffd79a;
+    background: #0a0a0e; border: 1px solid var(--stroke); border-radius: 5px; padding: 1px 5px;
+  }
+
+  .empty-ok {
+    text-align: center; padding: 50px 20px; color: var(--text-dim);
+  }
+  .empty-ok .big { font-size: 40px; margin-bottom: 8px; }
+
+  .error {
+    margin-top: 26px; padding: 16px 18px; border-radius: var(--radius-sm);
+    background: rgba(255,69,58,.09); border: 1px solid rgba(255,69,58,.28); color: #ff9a92;
+    font-size: 14px; display: none;
+  }
+  .error.on { display: block; animation: rise .3s ease; }
+  .error h4 { margin: 0 0 6px; font-size: 14.5px; color: #ffb0a8; font-weight: 620; }
+  .error p { margin: 0 0 10px; line-height: 1.55; }
+  .error code { font-family: var(--mono); font-size: 12px; background: rgba(0,0,0,.35);
+    border: 1px solid rgba(255,255,255,.10); border-radius: 7px; padding: 2px 7px; color: #ffd0c9; }
+  .error .unlock { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+  .error .unlock input {
+    flex: 1; min-width: 220px; background: var(--bg-elev-2); border: 1px solid var(--stroke-strong);
+    border-radius: 8px; padding: 9px 12px; color: var(--text); font-family: var(--mono); font-size: 12.5px;
+  }
+  .error .unlock button {
+    background: var(--accent); border: 0; color: #fff; font-family: var(--font); font-weight: 600;
+    font-size: 13px; padding: 9px 18px; border-radius: 8px; cursor: pointer;
+  }
+  .error .unlock button:disabled { opacity: .5; cursor: default; }
+  .error .unlock-status { font-size: 12.5px; color: var(--text-dim); font-family: var(--mono); }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slide { from { background-position: 0% 0; } to { background-position: 200% 0; } }
+
+  @media (max-width: 680px) {
+    .summary { grid-template-columns: 1fr; }
+    .wrap { padding: 24px 16px 72px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  .hint-inline { color: var(--text-faint); font-size: 12px; font-family: var(--mono); }
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .seg { display: inline-flex; border: 1px solid var(--stroke); border-radius: 999px; overflow: hidden; }
+  .seg button {
+    background: transparent; border: 0; color: var(--text-dim); font-family: var(--font);
+    font-size: 12.5px; padding: 6px 13px; cursor: pointer; transition: all .15s ease;
+  }
+  .seg button + button { border-left: 1px solid var(--stroke); }
+  .seg button:hover { color: var(--text); }
+  .seg button.on { background: rgba(91,140,255,.16); color: var(--text); }
+  details.adv { margin-top: 14px; border: 1px solid var(--stroke); border-radius: var(--radius-sm); background: var(--bg-elev); }
+  details.adv > summary { cursor: pointer; padding: 11px 15px; font-size: 13px; color: var(--text-dim); list-style: none; }
+  details.adv > summary::-webkit-details-marker { display: none; }
+  details.adv > summary::before { content: '› '; color: var(--accent); }
+  details.adv[open] > summary::before { content: '⌄ '; }
+  .adv-body { padding: 4px 15px 15px; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .adv-body label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--text-dim); }
+  .adv-body input, .adv-body textarea {
+    background: var(--bg-elev-2); border: 1px solid var(--stroke); border-radius: 8px; color: var(--text);
+    font-family: var(--mono); font-size: 12px; padding: 8px 10px; width: 100%; box-sizing: border-box;
+  }
+  .adv-body textarea { resize: vertical; min-height: 60px; grid-column: 1 / -1; }
+
+  /* Scorecard */
+  .scorecard { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 24px 0 6px; }
+  .dcard {
+    background: linear-gradient(180deg, rgba(255,255,255,.03) 0%, rgba(255,255,255,.01) 100%), var(--bg-elev);
+    border: 1px solid var(--stroke); border-radius: var(--radius-sm);
+    padding: 15px 17px;
+    transition: transform .2s cubic-bezier(.2,.8,.2,1), border-color .2s ease, box-shadow .2s ease;
+  }
+  .dcard:hover {
+    transform: translateY(-2px);
+    border-color: var(--stroke-strong);
+    box-shadow: 0 14px 30px -10px rgba(0,0,0,.6);
+  }
+  .dcard .dk { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); font-weight: 600; }
+  .dcard .dv { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; }
+  .dcard .ds { font-size: 26px; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .dcard .dg { font-size: 12px; color: var(--text-dim); font-weight: 500; }
+  .dcard .dbar { height: 5px; border-radius: 999px; background: rgba(255,255,255,.07); margin-top: 10px; overflow: hidden; }
+  .dcard .dbar > i { display: block; height: 100%; border-radius: 999px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+
+  /* Diff panel */
+  .diff { margin: 22px 0 4px; border: 1px solid var(--stroke); border-radius: var(--radius); background: var(--bg-elev); overflow: hidden; }
+  .diff > .dh { padding: 12px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--stroke); font-size: 13px; color: var(--text-dim); }
+  .diff > .dh .delta { font-family: var(--mono); font-weight: 600; }
+  .diff .dbody { padding: 12px 16px; display: grid; gap: 8px; }
+  .diff .row { display: flex; gap: 9px; align-items: flex-start; font-size: 13px; }
+  .diff .tag { font-size: 10px; font-weight: 700; border-radius: 5px; padding: 2px 6px; flex: none; text-transform: uppercase; letter-spacing: .03em; }
+  .diff .tag.new { background: rgba(255,69,58,.16); color: #ff6961; }
+  .diff .tag.fixed { background: rgba(48,209,88,.16); color: #4cd97b; }
+  .diff .tag.worse { background: rgba(255,159,10,.16); color: #ffb340; }
+  .diff .tag.better { background: rgba(100,210,255,.16); color: #7dd8ff; }
+  .diff .none { color: var(--text-faint); font-size: 13px; }
+
+  /* Modal (history / portfolio) */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: var(--blur);
+           display: none; z-index: 60; align-items: flex-start; justify-content: center; padding: 6vh 16px; overflow: auto; }
+  .modal.on { display: flex; animation: rise .25s cubic-bezier(.2,.8,.2,1); }
+  .sheet {
+    width: min(920px, 100%); background: var(--bg-elev); border: 1px solid var(--stroke-strong);
+    border-radius: var(--radius); box-shadow: 0 40px 100px rgba(0,0,0,.6); overflow: hidden;
+  }
+  .sheet > .sh { display: flex; align-items: center; gap: 10px; padding: 15px 18px; border-bottom: 1px solid var(--stroke); }
+  .sheet > .sh h3 { font-size: 15px; font-weight: 600; }
+  .sheet > .sh .spacer { flex: 1; }
+  .sheet .sbody { padding: 6px 0; max-height: 68vh; overflow: auto; }
+  table.rows { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.rows th { text-align: left; font-weight: 500; color: var(--text-faint); font-size: 11.5px;
+                  text-transform: uppercase; letter-spacing: .04em; padding: 9px 18px; border-bottom: 1px solid var(--stroke); }
+  table.rows td { padding: 11px 18px; border-bottom: 1px solid rgba(255,255,255,.04); }
+  table.rows tr:hover td { background: rgba(255,255,255,.02); }
+  table.rows .mono { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+  table.rows .clickable { cursor: pointer; }
+  .pill { font-size: 11px; font-weight: 650; border-radius: 999px; padding: 2px 9px; font-variant-numeric: tabular-nums; }
+  .bar-actions { display: flex; gap: 8px; padding: 14px 18px; border-top: 1px solid var(--stroke); flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">V</div>
+    <div>
+      <h1>VibeScan</h1>
+      <div class="sub">Internal scanner · security · GDPR/EU · SEO · quality · 2026</div>
+    </div>
+    <div class="badge" id="versionBadge">internal build · v2.0</div>
+  </header>
+
+  <nav class="toolbar" style="margin-top:0">
+    <button class="tab" id="openHistory" type="button">History</button>
+    <button class="tab" id="openPortfolio" type="button">Portfolio</button>
+    <div class="spacer"></div>
+    <span class="hint-inline" id="healthLine"></span>
+  </nav>
+
+  <form class="searchbar" id="form">
+    <input id="url" type="text" spellcheck="false" autocomplete="off" placeholder="example.com or local repo (e.g. ~/my-project)" />
+    <button class="primary" id="go" type="submit">Scan</button>
+  </form>
+  <div class="controls">
+    <div class="seg" id="profileSeg" title="Scan depth">
+      <button type="button" data-profile="quick">Quick</button>
+      <button type="button" data-profile="standard" class="on">Standard</button>
+      <button type="button" data-profile="deep">Deep</button>
+      <button type="button" data-profile="pentest" style="color:#f87171;font-weight:650">Pentest (Nuclei)</button>
+    </div>
+    <button class="ghost" type="button" id="exportBtn" disabled>Export ▾</button>
+    <button class="ghost" type="button" id="localAuditBtn" title="Audit local repository directly on disk">Local Repo Audit</button>
+    <span class="hint-inline" id="profileHint">crawl + render</span>
+  </div>
+
+  <details class="adv" id="adv">
+    <summary>Advanced options (auth, limits, schedule)</summary>
+    <div class="adv-body">
+      <label>Max pages<input id="optMaxPages" type="number" min="1" max="60" value="25" /></label>
+      <label>Max depth<input id="optMaxDepth" type="number" min="0" max="4" value="2" /></label>
+      <label class="toggle" style="flex-direction:row;align-items:center;gap:8px">
+        <input type="checkbox" id="deepToggle" checked /> Render SPAs / deep
+      </label>
+      <label class="toggle" style="flex-direction:row;align-items:center;gap:8px">
+        <input type="checkbox" id="optPerf" checked /> Measure Core Web Vitals
+      </label>
+      <label style="grid-column:1/-1">Request headers — one per line, e.g. <code>Cookie: session=…</code> (kept local, never logged)
+        <textarea id="optHeaders" spellcheck="false" placeholder="Cookie: session=abc123&#10;Authorization: Bearer …"></textarea>
+      </label>
+      <label>Schedule (optional cron hint, stored only)
+        <input id="optSchedule" placeholder="0 6 * * 1" />
+      </label>
+    </div>
+  </details>
+
+  <div class="hint">
+    <span>Headers, TLS, cookies, secrets, trackers, consent, policies, SEO, assets, a11y, CWV</span>
+    <span><kbd>Enter</kbd> to run</span>
+  </div>
+
+  <div class="scorecard" id="scorecard" style="display:none"></div>
+  <div class="diff" id="diffBox" style="display:none"></div>
+
+  <div class="error" id="error"></div>
+
+  <div class="progress" id="progress">
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    <div class="prog-label"><span id="progStep">Resolving host…</span><span id="progPct">0%</span></div>
+  </div>
+
+  <section class="results" id="results">
+    <div class="summary">
+      <div class="ring">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="12" />
+          <circle id="ringArc" cx="75" cy="75" r="64" fill="none" stroke="#30d158" stroke-width="12"
+                  stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402" />
+        </svg>
+        <div class="val">
+          <div>
+            <div class="score" id="scoreVal">—</div>
+            <div class="grade" id="gradeVal">grade —</div>
+          </div>
+        </div>
+      </div>
+      <div class="target-info">
+        <h2 id="resName">—</h2>
+        <div class="url" id="resUrl"></div>
+        <div class="counts" id="counts"></div>
+        <div class="hint-inline" id="scoreExplain" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="tab active" data-filter="all">All</button>
+      <button class="tab" data-filter="critical">Critical</button>
+      <button class="tab" data-filter="security">Security</button>
+      <button class="tab" data-filter="compliance">Compliance</button>
+      <button class="tab" data-filter="seo">SEO</button>
+      <button class="tab" data-filter="performance">Performance</button>
+      <button class="tab" data-filter="accessibility">Accessibility</button>
+      <button class="tab" data-filter="quality">Quality</button>
+      <div class="spacer"></div>
+      <button class="ghost" id="copyAll">Copy fix plan for AI agent</button>
+      <button class="ghost" id="export">Export JSON</button>
+      <button class="ghost" id="clearBtn" title="Clear results">Clear</button>
+    </div>
+
+    <div class="list" id="list"></div>
+  </section>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const form = $('#form'), input = $('#url'), goBtn = $('#go');
+let current = null;
+
+/* ── Auth ─────────────────────────────────────────────────────────────────
+ * The server refuses /api/* without a bearer token when bound beyond
+ * loopback. Grab the token from ?token=… (or #token=…) on first load, stash
+ * it in sessionStorage, and strip it from the URL so it isn't left in the
+ * address bar / history / shared links. Every API call goes through apiFetch,
+ * which attaches it. `authRequired` flips on the first 401 so we can tell the
+ * user what to do instead of a bare "Unauthorized".
+ */
+const TOKEN_KEY = 'vibescan_token';
+let authRequired = false;
+(function captureToken() {
+  try {
+    const p = new URLSearchParams(location.search);
+    const h = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const t = (p.get('token') || h.get('token') || '').trim();
+    if (t) {
+      sessionStorage.setItem(TOKEN_KEY, t);
+      p.delete('token'); h.delete('token');
+      const qs = p.toString(), hs = h.toString();
+      history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + (hs ? '#' + hs : ''));
+    }
+  } catch (e) { /* non-browser / storage disabled — fall through */ }
+})();
+function getToken() {
+  try {
+    // sessionStorage first (tab-scoped, preferred), then localStorage so the
+    // unlock survives closing the tab — otherwise the tool asks for the token
+    // again on every visit, which is what pushed people to "just make it work".
+    return (sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || '').trim();
+  } catch (e) { return ''; }
+}
+function setToken(t) {
+  t = (t || '').trim();
+  try {
+    if (t) { sessionStorage.setItem(TOKEN_KEY, t); localStorage.setItem(TOKEN_KEY, t); }
+    else { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); }
+  } catch (e) { /* storage disabled — token lives for this page load only */ }
+}
+function authHeaders(extra) {
+  const t = getToken();
+  return t ? Object.assign({ Authorization: 'Bearer ' + t }, extra || {}) : (extra || {});
+}
+function apiFetch(url, opts) {
+  opts = opts || {};
+  if (!getToken()) opts.headers = opts.headers || {};   // no-op guard, keeps signature stable
+  opts.headers = authHeaders(opts.headers);
+  return fetch(url, opts).then((res) => {
+    if (res.status === 401) authRequired = true;
+    return res;
+  });
+}
+
+/* ── Unlock panel ─────────────────────────────────────────────────────────
+ * A 401 used to be a dead end: the page just said "append ?token=… and reload"
+ * and the user had to hand-edit the address bar (impossible on a phone). Now it
+ * paints a real form: paste the token, it is verified against /api/history
+ * before being stored, and the last action is replayed once it succeeds.
+ */
+function showUnlock(message, onUnlocked) {
+  authRequired = true;
+  const box = $('#error');
+  box.innerHTML =
+    '<h4>Access token required</h4>' +
+    '<p>' + esc(message || 'This VibeScan binds beyond loopback, so /api/* needs a bearer token.') + '</p>' +
+    '<p>Paste the token from <code>.env</code> (<code>VIBESCAN_TOKEN</code>) — ' +
+    'or open this page once with <code>?token=…</code>.</p>' +
+    '<div class="unlock">' +
+      '<input id="unlockInput" type="password" placeholder="paste token…" autocomplete="off" spellcheck="false" />' +
+      '<button id="unlockBtn" type="button">Unlock</button>' +
+      '<span class="unlock-status" id="unlockStatus"></span>' +
+    '</div>';
+  box.classList.add('on');
+
+  const inp = $('#unlockInput'), btn = $('#unlockBtn'), st = $('#unlockStatus');
+  const submit = async () => {
+    const t = inp.value.trim();
+    if (!t) { st.textContent = 'Enter a token first.'; return; }
+    btn.disabled = true; st.textContent = 'Verifying…';
+    const prev = getToken();
+    setToken(t);
+    try {
+      const r = await fetch('/api/history?limit=1', { headers: { Authorization: 'Bearer ' + t } });
+      if (r.status === 401) {
+        setToken(prev || '');
+        st.textContent = 'That token was rejected.'; btn.disabled = false; return;
+      }
+      st.textContent = 'Unlocked ✓';
+      box.classList.remove('on');
+      if (typeof onUnlocked === 'function') onUnlocked();
+    } catch (e) {
+      st.textContent = 'Could not reach the server.'; btn.disabled = false;
+    }
+  };
+  btn.addEventListener('click', submit);
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+  inp.focus();
+}
+
+const STEPS = [
+  ['Resolving host & validating target…', 12],
+  ['Fetching page & TLS info…', 34],
+  ['Checking security headers & cookies…', 52],
+  ['Scanning body for secrets & mixed content…', 68],
+  ['Checking GDPR/EU compliance signals…', 78],
+  ['Auditing SEO & assets…', 86],
+  ['Measuring Core Web Vitals & a11y…', 93],
+  ['Running active security probes…', 97],
+  ['Scoring…', 100],
+];
+
+function playProgress() {
+  const wrap = $('#progress'); wrap.classList.add('on');
+  let i = 0;
+  return new Promise((resolve) => {
+    const tick = () => {
+      if (i >= STEPS.length) return resolve();
+      const [label, pct] = STEPS[i];
+      $('#progStep').textContent = label;
+      $('#progPct').textContent = pct + '%';
+      $('#progFill').style.width = pct + '%';
+      i++;
+      setTimeout(tick, 380);
+    };
+    tick();
+  });
+}
+
+function severityColor(sev) {
+  return ({ critical: '#ff453a', high: '#ff9f0a', medium: '#ffd60a', low: '#64d2ff', info: '#8e8e93' })[sev] || '#8e8e93';
+}
+
+function scoreColor(score) {
+  if (score >= 90) return '#30d158';
+  if (score >= 70) return '#ffd60a';
+  if (score >= 55) return '#ff9f0a';
+  return '#ff453a';
+}
+
+function render(report) {
+  current = report;
+  $('#error').classList.remove('on');
+  $('#results').classList.add('on');
+
+  const sc = scoreColor(report.score);
+  $('#scoreVal').textContent = report.score;
+  $('#scoreVal').style.color = sc;
+  $('#gradeVal').textContent = 'grade ' + report.grade;
+  const arc = $('#ringArc');
+  arc.setAttribute('stroke', sc);
+  const circumference = 402;
+  arc.setAttribute('stroke-dashoffset', String(circumference - (circumference * report.score) / 100));
+
+  try {
+    $('#resName').textContent = new URL(report.finalUrl).hostname || report.target;
+  } catch (_) {
+    $('#resName').textContent = report.target || 'Audit';
+  }
+  const dm = report.meta && report.meta.deep;
+  const bits = [report.finalUrl, report.durationMs + ' ms'];
+  if (report.status) bits.push('HTTP ' + report.status);
+  if (report.meta && report.meta.localAudit) {
+    bits.push(report.meta.filesScanned + ' files audited');
+    bits.push('white-box code scan');
+  } else {
+    if (dm && dm.crawl) bits.push(dm.crawl.pagesScanned + ' pages crawled');
+    if (report.meta && report.meta.rendered) bits.push('JS rendered');
+    if (report.meta && report.meta.nuclei) {
+      const n = report.meta.nuclei;
+      const sec = n.durationMs ? Math.round(n.durationMs / 1000) + 's' : '';
+      bits.push(`Nuclei DAST (${n.findingsCount} exploits${sec ? ', ' + sec : ''})`);
+    }
+  }
+  $('#resUrl').textContent = bits.join('  ·  ');
+
+  // Explain the headline score so "grade F" is never a mystery again.
+  const se = $('#scoreExplain');
+  if (typeof report.domainAverage === 'number') {
+    let expl = report.scoreCeiling < 100
+      ? `Overall = average of the domains (${report.domainAverage}), capped at ${report.scoreCeiling} because of high-severity findings.`
+      : `Overall = average of the six domain scores.`;
+    if (report.meta && report.meta.nuclei) {
+      const n = report.meta.nuclei;
+      const sec = n.durationMs ? Math.round(n.durationMs / 1000) + 's' : '2m';
+      expl += n.findingsCount === 0
+        ? ` • Pentest: Nuclei DAST executed active exploit templates (${sec}) — 0 active vulnerabilities detected (target is secure).`
+        : ` • Pentest: Nuclei DAST detected ${n.findingsCount} active vulnerability exploit(s) (${sec}).`;
+    }
+    se.textContent = expl;
+  } else { se.textContent = ''; }
+
+  const order = ['critical', 'high', 'medium', 'low', 'info'];
+  let pills = order
+    .filter((s) => report.counts[s])
+    .map((s) => `<span class="pill"><span class="dot" style="background:${severityColor(s)}"></span>${report.counts[s]} ${s}</span>`)
+    .join('') + `<span class="pill">${report.findings.length} total findings</span>`;
+
+  if (report.meta && report.meta.nuclei) {
+    const n = report.meta.nuclei;
+    const sec = n.durationMs ? Math.round(n.durationMs / 1000) + 's' : '';
+    if (n.findingsCount === 0) {
+      pills += `<span class="pill" style="border-color:rgba(74,222,128,0.4);color:#86efac;background:rgba(34,197,94,0.12)">🛡️ Pentest: 0 exploits (${sec || 'clean'})</span>`;
+    } else {
+      pills += `<span class="pill" style="border-color:rgba(239,68,68,0.45);color:#fca5a5;background:rgba(239,68,68,0.15)">⚠️ Pentest: ${n.findingsCount} exploits (${sec})</span>`;
+    }
+  }
+  $('#counts').innerHTML = pills;
+
+  renderScorecard(report);
+  renderDiff(report.diff);
+  $('#exportBtn').disabled = false;
+
+  // meta.moduleErrors is an OBJECT ({ label: message }), not an array — the old
+  // `.length` check was always undefined so this warning never appeared.
+  const modErrs = report.meta && report.meta.moduleErrors;
+  const modErrCount = modErrs ? Object.keys(modErrs).length : 0;
+  if (modErrCount) {
+    toast(modErrCount + ' check module(s) errored — partial report');
+  }
+
+  renderList('all');
+}
+
+const DOMAIN_LABEL = {
+  security: 'Security', compliance: 'EU / GDPR', performance: 'Performance',
+  accessibility: 'Accessibility', seo: 'SEO', quality: 'Quality',
+};
+
+function renderScorecard(report) {
+  const box = $('#scorecard');
+  const d = report.domains;
+  if (!d) { box.style.display = 'none'; return; }
+  const keys = Object.keys(DOMAIN_LABEL).filter((k) => d[k]);
+  // Domains with no checks wired yet are shown as "n/a" so they aren't mistaken for perfect.
+  box.innerHTML = keys.map((k) => {
+    const info = d[k];
+    const col = scoreColor(info.score);
+    const n = info.total || 0;
+    return `<div class="dcard" title="${esc(DOMAIN_LABEL[k])}: ${n} finding(s)">
+      <div class="dk">${DOMAIN_LABEL[k]}</div>
+      <div class="dv">
+        <span class="ds" style="color:${col}">${info.score}</span>
+        <span class="dg">grade ${info.grade}${n ? ' · ' + n + ' issue' + (n === 1 ? '' : 's') : ''}</span>
+      </div>
+      <div class="dbar"><i style="width:${info.score}%;background:${col}"></i></div>
+    </div>`;
+  }).join('');
+  box.style.display = 'grid';
+}
+
+function renderDiff(diff) {
+  const box = $('#diffBox');
+  if (!diff) { box.style.display = 'none'; return; }
+
+  const added = diff.added || [];
+  const removed = diff.removed || [];
+  const changed = diff.severityChanged || [];
+  const delta = (diff.score && typeof diff.score.delta === 'number') ? diff.score.delta : null;
+
+  const deltaTxt = (delta == null) ? 'first scan of this target'
+    : (delta > 0 ? `▲ +${delta} since last scan` : delta < 0 ? `▼ ${delta} since last scan` : '± unchanged since last scan');
+  const deltaCol = delta == null ? 'var(--text-faint)' : delta > 0 ? 'var(--ok)' : delta < 0 ? 'var(--critical)' : 'var(--text-dim)';
+
+  const rows = [];
+  for (const f of added.slice(0, 12)) rows.push(`<div class="row"><span class="tag new">new</span><span>[${f.severity}] ${esc(f.title)}</span></div>`);
+  for (const c of changed.slice(0, 12)) rows.push(`<div class="row"><span class="tag ${c.direction}">${c.direction}</span><span>${esc(c.title)} — ${c.from} → ${c.to}</span></div>`);
+  for (const f of removed.slice(0, 12)) rows.push(`<div class="row"><span class="tag fixed">fixed</span><span>[${f.severity}] ${esc(f.title)}</span></div>`);
+
+  if (!rows.length) rows.push(`<div class="none">No new, fixed, or changed findings — stable.</div>`);
+
+  box.innerHTML = `
+    <div class="dh">
+      <strong style="color:var(--text)">Regression tracking</strong>
+      <span class="delta" style="color:${deltaCol}">${deltaTxt}</span>
+      <span style="margin-left:auto;color:var(--text-faint)">${added.length} new · ${removed.length} fixed · ${changed.length} changed</span>
+    </div>
+    <div class="dbody">${rows.join('')}</div>`;
+  box.style.display = 'block';
+}
+
+const TRADEOFF_INFO = {
+  'seo-ai-content-scraped': {
+    tag: 'STRATEGIC / GEO',
+    note: 'Strategically intentional: Keep open if you want AI search discovery (ChatGPT, Perplexity, Claude, Apple Intelligence / GEO). Only block if actively preventing training on proprietary data.'
+  },
+  'csp-unsafe-inline': {
+    tag: 'FRAMEWORK / SSR',
+    note: 'Next.js / React SSR hydration trade-off: Inlined hydration scripts require unsafe-inline unless deploying dynamic cryptographic nonces via middleware. Standard across Vercel/Next.js ecosystem.'
+  },
+  'html-inline-scripts': {
+    tag: 'FRAMEWORK / HYDRATION',
+    note: 'Inlined SSR bootstrap payloads and analytics chunks. Typical in modern SSR applications.'
+  },
+  'coep-missing': {
+    tag: 'ENTERPRISE ISOLATION',
+    note: 'High risk: Enforcing `require-corp` will break external integrations, Google Tag Manager, Stripe iframes, and third-party media embeds.'
+  },
+  'corp-missing': {
+    tag: 'ENTERPRISE ISOLATION',
+    note: 'Optional cross-origin isolation. Enabling without matching CDN CORS headers can break sub-resources.'
+  },
+  'csp-no-trusted-types': {
+    tag: 'ENTERPRISE HARDENING',
+    note: 'Strict DOM XSS enforcement meant for high-security enterprise apps. Incompatible with standard third-party libraries.'
+  },
+  'csp-upgrade-insecure': {
+    tag: 'INFORMATIONAL',
+    note: 'Informational hygiene: Domains served exclusively over HTTPS with HSTS already enforce secure transport.'
+  },
+  'fingerprint-tech': {
+    tag: 'INFORMATIONAL',
+    note: 'Informational architecture detection (Next.js, React, Tailwind, Cloudflare). Normal for modern public web stacks.'
+  },
+  'infra-third-party': {
+    tag: 'INFORMATIONAL',
+    note: 'Informational CDN edge detection (Cloudflare). Standard for high-availability production applications.'
+  },
+  'mta-sts-missing': {
+    tag: 'MAIL HARDENING',
+    note: 'Mail server hardening: Relevant only if running inbound MX mail servers on this domain, not for web frontend.'
+  },
+  'tlsrpt-missing': {
+    tag: 'MAIL HARDENING',
+    note: 'SMTP TLS reporting: Relevant only for inbound mail server telemetry.'
+  },
+  'a11y-statement-missing': {
+    tag: 'COMPLIANCE DOC',
+    note: 'Public compliance policy recommendation: Does not impact technical DOM accessibility.'
+  },
+  'perf-network-errors': {
+    tag: 'INTERMITTENT BEACON',
+    note: 'Usually triggered by aborted background analytics beacons or page unloads during crawl, not broken website code.'
+  }
+};
+
+function renderList(filter) {
+  if (!current) return;
+  let fs = current.findings;
+  if (filter === 'critical') fs = fs.filter((f) => f.severity === 'critical' || f.severity === 'high');
+  else if (filter !== 'all') fs = fs.filter((f) => f.domain === filter);
+
+  const list = $('#list');
+  if (!fs.length) {
+    list.innerHTML = `<div class="empty-ok"><div class="big">✓</div><div>Nothing here — clean on this filter.</div></div>`;
+    return;
+  }
+  list.innerHTML = fs.map((f, idx) => {
+    const trade = TRADEOFF_INFO[f.id];
+    return `
+    <div class="finding" data-idx="${idx}">
+      <div class="finding-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="sev ${f.severity}">${f.severity}</span>
+        ${trade ? `<span class="pill" style="font-size:10px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,0.08);color:#F8FAFC;border:1px solid rgba(255,255,255,0.16);margin-left:6px;font-weight:600;letter-spacing:0.02em;">${trade.tag}</span>` : ''}
+        <div style="flex:1">
+          <div class="f-title">${esc(f.title)}</div>
+          <div class="f-domain">${f.domain}</div>
+        </div>
+        <span class="chev">›</span>
+      </div>
+      <div class="finding-body">
+        ${trade ? `<div style="margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#cbd5e1;font-size:13px;line-height:1.45"><strong style="color:#ffffff">Arhitekturni / strateški kontekst:</strong> ${esc(trade.note)}</div>` : ''}
+        <div class="explain">
+          <div class="cell"><div class="k">What it is</div><div class="v">${esc(f.whatItIs || f.detail)}</div></div>
+          <div class="cell"><div class="k">Who can use it</div><div class="v">${esc(f.whoCanAct || 'An attacker able to reach the site.')}</div></div>
+          <div class="cell"><div class="k">Real-world impact</div><div class="v">${esc(f.impact || 'Weakens the site\'s security posture.')}</div></div>
+          <div class="cell worst"><div class="k">Worst case if left unfixed</div><div class="v">${esc(f.worstCase || 'It can be chained into a real compromise.')}</div></div>
+        </div>
+        ${Array.isArray(f.exploitSteps) && f.exploitSteps.length ? `
+        <div class="exploit">
+          <div class="k">How it actually gets exploited</div>
+          <ol>${f.exploitSteps.map((s) => `<li>${inlineCode(esc(s))}</li>`).join('')}</ol>
+        </div>` : ''}
+        <div class="detail">${esc(f.detail)}</div>
+        ${locBlock(f)}
+        <div class="fix"><b>Fix →</b> ${esc(f.fix)}</div>
+        ${f.evidence ? `<div class="evidence">${esc(f.evidence)}</div>` : ''}
+        <div class="f-actions">
+          <button class="ghost" onclick="copyOne(${idx})">Copy fix for AI agent</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Render the "Where exactly" block: a list of concrete DOM/CSS locations the
+// scanner found. Falls back gracefully when a finding has no locators.
+function locBlock(f) {
+  const locs = Array.isArray(f.locations) ? f.locations.filter(Boolean) : [];
+  if (!locs.length) return '';
+  const rows = locs.slice(0, 12).map((l) => {
+    const sel = (l.selector || l.css || l.header)
+      ? `<code class="loc-sel">${esc(l.selector || l.css || ('header: ' + l.header))}</code>` : '';
+    const extra = [
+      l.cookie ? `cookie: ${esc(l.cookie)}` : '',
+      l.url && !l.selector ? `on ${esc(l.url)}` : '',
+      l.text ? `text: "${esc(l.text)}"` : '',
+      (l.ratio != null) ? `contrast ${l.ratio}:1 (needs ${l.need}:1)` : '',
+      l.fg && l.bg ? `${esc(l.fg)} on ${esc(l.bg)}` : '',
+    ].filter(Boolean).join(' · ');
+    const html = l.html ? `<pre class="loc-html">${esc(l.html)}</pre>` : '';
+    const raw = (!l.html && l.raw) ? `<pre class="loc-html">${esc(l.raw)}</pre>` : '';
+    return `<li>${sel}${extra ? `<div class="loc-meta">${extra}</div>` : ''}${html}${raw}</li>`;
+  }).join('');
+  return `<div class="locations">
+    <div class="k">Where exactly (${locs.length} found)</div>
+    <ul>${rows}</ul>
+  </div>`;
+}
+
+// Escape already-escaped text further, then render `backticks` as <code>.
+// Input must already be HTML-escaped.
+function inlineCode(s) {
+  return String(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
+function buildPrompt(f) {
+  let s = `Fix this issue on my website (${current.finalUrl}):\n\n` +
+    `Issue: ${f.title}\nSeverity: ${f.severity}\nCategory: ${f.domain}\n`;
+  if (f.whatItIs) s += `What it is: ${f.whatItIs}\n`;
+  if (f.impact) s += `Impact: ${f.impact}\n`;
+  if (f.worstCase) s += `Worst case: ${f.worstCase}\n`;
+  if (Array.isArray(f.exploitSteps) && f.exploitSteps.length) {
+    s += `Attack path (how this is actually exploited):\n` +
+      f.exploitSteps.map((step, i) => `  ${i + 1}. ${step}`).join('\n') + `\n`;
+  }
+  if (Array.isArray(f.locations) && f.locations.length) {
+    s += `Where exactly (${f.locations.length} location(s) found):\n` +
+      f.locations.slice(0, 12).map((l) => {
+        const bits = [l.selector, l.css].filter(Boolean).join(' ') || (l.header ? `header: ${l.header}` : '(element)');
+        const meta = [l.cookie ? `cookie: ${l.cookie}` : '', l.url && !l.selector ? `on ${l.url}` : '', l.text ? `text: "${l.text}"` : '', (l.ratio != null) ? `contrast ${l.ratio}:1 (needs ${l.need}:1)` : ''].filter(Boolean).join(' · ');
+        const snip = l.html || l.raw;
+        return `  - ${bits}${meta ? ` — ${meta}` : ''}${snip ? `\n    ${snip}` : ''}`;
+      }).join('\n') + `\n`;
+  }
+  s += `Details: ${f.detail}\nRecommended fix: ${f.fix}\n`;
+  if (f.evidence) s += `Evidence:\n${f.evidence}\n`;
+  s += `\nExplain what you changed and why, and keep the rest of the site working.`;
+  return s;
+}
+
+function copyOne(filteredIdx) {
+  // map displayed index back to actual finding
+  let list, filter = document.querySelector('.tab.active').dataset.filter;
+  if (filter === 'critical') list = current.findings.filter((f) => f.severity === 'critical' || f.severity === 'high');
+  else if (filter !== 'all') list = current.findings.filter((f) => f.domain === filter);
+  else list = current.findings;
+  copyText(buildPrompt(list[filteredIdx]), 'Fix prompt copied');
+}
+
+function copyAll() {
+  const actionable = [];
+  const tradeoffs = [];
+  current.findings.forEach((f) => {
+    if (TRADEOFF_INFO[f.id]) tradeoffs.push(f);
+    else actionable.push(f);
+  });
+
+  let prompt = `Here is a full scan report for ${current.finalUrl} (score ${current.score}/100).\n`;
+  prompt += `Please review carefully before making changes:\n\n`;
+
+  if (actionable.length) {
+    prompt += `### 1. ACTIONABLE BUGS & FIXES (Safe and recommended to implement):\n`;
+    prompt += actionable.map((f, i) => `${i + 1}. [${f.severity}] ${f.title}\n   Fix: ${f.fix}`).join('\n\n') + '\n\n';
+  } else {
+    prompt += `### 1. ACTIONABLE BUGS: None detected! Clean on all core requirements.\n\n`;
+  }
+
+  if (tradeoffs.length) {
+    prompt += `### 2. ARCHITECTURAL TRADE-OFFS & STRATEGIC SETTINGS (Verify first — DO NOT blind-fix):\n`;
+    prompt += tradeoffs.map((f) => {
+      const info = TRADEOFF_INFO[f.id];
+      return `• [${f.severity}] ${f.title}\n  Context: ${info.note}\n  Scanner default suggestion: ${f.fix}`;
+    }).join('\n\n') + '\n';
+  }
+
+  copyText(prompt, 'Organized fix plan copied');
+}
+
+function copyText(text, label) {
+  // navigator.clipboard only exists in a secure context (HTTPS or localhost).
+  // Over plain HTTP on a Tailscale/LAN IP it is undefined → fall back to execCommand.
+  const legacyCopy = () => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, ta.value.length);
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast(ok ? label : 'Copy failed');
+    } catch (_) {
+      toast('Copy failed');
+    }
+  };
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => toast(label)).catch(legacyCopy);
+  } else {
+    legacyCopy();
+  }
+}
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(12px);background:#1c1c24;border:1px solid rgba(255,255,255,.16);color:#f2f2f7;padding:11px 18px;border-radius:12px;font-size:13.5px;box-shadow:0 16px 40px rgba(0,0,0,.5);opacity:0;transition:all .25s cubic-bezier(.2,.8,.2,1);z-index:50;';
+  document.body.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)'; });
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(12px)'; setTimeout(() => t.remove(), 300); }, 1900);
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const url = input.value.trim();
+  if (!url) return;
+  goBtn.disabled = true;
+  $('#scorecard').style.display = 'none';
+  $('#diffBox').style.display = 'none';
+  $('#results').classList.remove('on');
+  $('#error').classList.remove('on');
+  const prog = playProgress();
+  try {
+    const isLocal = url.startsWith('/') || url.startsWith('~');
+    const endpoint = isLocal ? '/api/audit/local' : '/api/scan';
+    const body = isLocal
+      ? JSON.stringify({ path: url })
+      : JSON.stringify({
+          url,
+          profile,
+          pentest: profile === 'pentest',
+          deep: $('#deepToggle').checked,
+          maxPages: parseInt($('#optMaxPages').value, 10) || 25,
+          maxDepth: parseInt($('#optMaxDepth').value, 10) || 2,
+          performance: $('#optPerf').checked,
+          headers: parseHeaders($('#optHeaders').value),
+        });
+
+    const res = await apiFetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    });
+    const data = await res.json();
+    await prog;
+    if (!res.ok) throw new Error(data.error || 'Scan failed');
+    render(data);
+  } catch (err) {
+    await prog;
+    $('#progress').classList.remove('on');
+    if (authRequired || /unauthor/i.test(err.message || '')) {
+      // Paint the unlock form and, once the token is accepted, run this scan.
+      showUnlock('This VibeScan binds beyond loopback, so scans need an access token.', () => {
+        form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
+      });
+    } else {
+      const box = $('#error');
+      box.textContent = 'Scan failed: ' + err.message;
+      box.classList.add('on');
+    }
+  } finally {
+    goBtn.disabled = false;
+    $('#progress').classList.remove('on');
+  }
+});
+
+$('#localAuditBtn')?.addEventListener('click', () => {
+  const defaultVal = (input.value.startsWith('/') || input.value.startsWith('~')) ? input.value : '~/my-project';
+  const p = prompt('Enter path to local project to audit (e.g. ~/my-project):', defaultVal);
+  if (p && p.trim()) {
+    input.value = p.trim();
+    form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
+  }
+});
+
+document.querySelectorAll('.tab[data-filter]').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab[data-filter]').forEach((t) => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderList(tab.dataset.filter);
+  });
+});
+
+$('#export').addEventListener('click', () => {
+  if (!current) return;
+  const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'vibescan-' + new URL(current.finalUrl).hostname.replace(/[^a-z0-9.-]/gi, '') + '.json';
+  a.click();
+});
+$('#copyAll').addEventListener('click', copyAll);
+$('#clearBtn').addEventListener('click', () => {
+  current = null;
+  $('#results').classList.remove('on');
+  $('#scorecard').style.display = 'none';
+  $('#diffBox').style.display = 'none';
+  input.value = '';
+});
+
+/* ------------------------------------------------------------------ *
+ * Phase 8 — profiles, advanced options, export, history, portfolio
+ * ------------------------------------------------------------------ */
+
+const PROFILES = {
+  quick:    { deep: false, maxPages: 1,  maxDepth: 0, hint: 'single page, fast' },
+  standard: { deep: true,  maxPages: 25, maxDepth: 2, hint: 'crawl + render' },
+  deep:     { deep: true,  maxPages: 60, maxDepth: 4, hint: 'full crawl + probes' },
+  pentest:  { deep: true,  maxPages: 25, maxDepth: 2, hint: 'active DAST & 14,000+ CVEs (Nuclei)' },
+};
+let profile = 'standard';
+
+function parseHeaders(txt) {
+  const out = {};
+  String(txt || '').split('\n').forEach((line) => {
+    const i = line.indexOf(':');
+    if (i > 0) {
+      const k = line.slice(0, i).trim();
+      const v = line.slice(i + 1).trim();
+      if (k && v) out[k] = v;
+    }
+  });
+  return out;
+}
+
+document.querySelectorAll('#profileSeg button').forEach((b) => {
+  b.addEventListener('click', () => {
+    profile = b.dataset.profile;
+    document.querySelectorAll('#profileSeg button').forEach((x) => x.classList.toggle('on', x === b));
+    const p = PROFILES[profile];
+    $('#optMaxPages').value = p.maxPages;
+    $('#optMaxDepth').value = p.maxDepth;
+    $('#deepToggle').checked = p.deep;
+    $('#profileHint').textContent = p.hint;
+  });
+});
+
+$('#exportBtn').addEventListener('click', (e) => {
+  if (!current || !current.id) { toast('Export needs a persisted scan'); return; }
+  const menu = document.createElement('div');
+  menu.style.cssText = 'position:fixed;z-index:70;background:#1c1c24;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:6px;box-shadow:0 20px 50px rgba(0,0,0,.55);font-size:13px;min-width:170px;';
+  const r = e.currentTarget.getBoundingClientRect();
+  menu.style.left = r.left + 'px';
+  menu.style.top = (r.bottom + 6) + 'px';
+  [['json', 'JSON (raw report)'], ['md', 'Markdown report'], ['html', 'Standalone HTML'], ['sarif', 'SARIF (for CI)']]
+    .forEach(([ext, label]) => {
+      const a = document.createElement('a');
+      a.textContent = label;
+      const t = authHeaders()['Authorization'];
+      a.href = `/api/export/${current.id}.${ext}` + (t ? `?token=${encodeURIComponent(t.slice(7))}` : '');
+      a.style.cssText = 'display:block;padding:8px 11px;border-radius:8px;color:#f2f2f7;text-decoration:none;';
+      a.onmouseenter = () => { a.style.background = 'rgba(255,255,255,.06)'; };
+      a.onmouseleave = () => { a.style.background = 'transparent'; };
+      a.onclick = () => setTimeout(() => menu.remove(), 0);
+      menu.appendChild(a);
+    });
+  document.body.appendChild(menu);
+  setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 0);
+});
+
+function openSheet(title) {
+  const m = document.createElement('div');
+  m.className = 'modal on';
+  m.innerHTML = `<div class="sheet"><div class="sh"><h3>${esc(title)}</h3><div class="spacer"></div>
+    <button class="ghost" data-close>Close</button></div>
+    <div class="sbody"><div style="padding:24px 18px;color:var(--text-faint)">Loading…</div></div></div>`;
+  m.addEventListener('click', (ev) => { if (ev.target === m || ev.target.hasAttribute('data-close')) m.remove(); });
+  document.body.appendChild(m);
+  return m;
+}
+
+function gradePill(score, grade) {
+  const col = scoreColor(score);
+  return `<span class="pill" style="background:${col}22;color:${col}">${score} ${grade}</span>`;
+}
+
+$('#openHistory').addEventListener('click', async () => {
+  const m = openSheet('Scan history');
+  const body = m.querySelector('.sbody');
+  try {
+    const { history } = await (await apiFetch('/api/history?limit=200')).json();
+    if (!history.length) { body.innerHTML = '<div style="padding:24px 18px;color:var(--text-faint)">No scans yet.</div>'; return; }
+    body.innerHTML = `<table class="rows"><thead><tr><th>Target</th><th>Score</th><th>Findings</th><th>When</th></tr></thead><tbody>
+      ${history.map((h) => `<tr><td class="clickable" data-id="${h.id}">${esc(h.targetKey || h.target)}<div class="mono">${new Date(h.at).toLocaleString()}</div></td>
+        <td>${gradePill(h.score, h.grade)}</td>
+        <td class="mono">${Object.entries(h.counts || {}).map(([k, v]) => v + ' ' + k).join(', ') || '—'}</td>
+        <td class="mono">${h.durationMs} ms</td></tr>`).join('')}
+    </tbody></table>`;
+    body.querySelectorAll('tr td.clickable').forEach((td) => td.addEventListener('click', async () => {
+      const rep = await (await apiFetch('/api/report/' + td.dataset.id)).json();
+      m.remove();
+      render(rep);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }));
+  } catch (e) {
+    if (authRequired) { m.remove(); showUnlock(null, () => $('#openHistory').click()); return; }
+    body.innerHTML = '<div style="padding:24px 18px;color:var(--critical)">Failed to load history.</div>';
+  }
+});
+
+$('#openPortfolio').addEventListener('click', async () => {
+  const m = openSheet('Portfolio — worst first');
+  const body = m.querySelector('.sbody');
+  try {
+    const { targets } = await (await apiFetch('/api/portfolio')).json();
+    if (!targets.length) { body.innerHTML = '<div style="padding:24px 18px;color:var(--text-faint)">No targets scanned yet.</div>'; return; }
+    body.innerHTML = `<table class="rows"><thead><tr><th>Target</th><th>Score</th><th>Scans</th><th>Latest</th></tr></thead><tbody>
+      ${targets.map((t) => `<tr><td class="clickable" data-id="${t.reportId}">${esc(t.targetKey)}<div class="mono">${esc(t.finalUrl || '')}</div></td>
+        <td>${gradePill(t.score, t.grade)}</td>
+        <td class="mono">${t.scans}</td>
+        <td class="mono">${new Date(t.at).toLocaleString()}</td></tr>`).join('')}
+    </tbody></table>
+    <div class="bar-actions"><button class="ghost" id="pfRescan">Re-scan all (queued)</button></div>`;
+    body.querySelectorAll('tr td.clickable').forEach((td) => td.addEventListener('click', async () => {
+      const rep = await (await apiFetch('/api/report/' + td.dataset.id)).json();
+      m.remove(); render(rep); window.scrollTo({ top: 0, behavior: 'smooth' });
+    }));
+    $('#pfRescan').addEventListener('click', async () => {
+      await apiFetch('/api/scan/portfolio', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: targets.map((t) => t.target), deep: true }),
+      });
+      toast(targets.length + ' scans queued');
+    });
+  } catch (e) {
+    if (authRequired) { m.remove(); showUnlock(null, () => $('#openPortfolio').click()); return; }
+    body.innerHTML = '<div style="padding:24px 18px;color:var(--critical)">Failed to load portfolio.</div>';
+  }
+});
+
+async function loadHealth() {
+  try {
+    const h = await (await fetch('/api/health')).json();
+    $('#healthLine').textContent = `${h.scans} scan${h.scans === 1 ? '' : 's'} stored` +
+      (h.queue && h.queue.running ? ' · 1 running' : h.queue && h.queue.queued ? ` · ${h.queue.queued} queued` : '');
+  } catch (e) { /* offline */ }
+}
+loadHealth();
+
+/* On load, if we have no token but the server wants one, show the unlock form
+ * immediately instead of waiting for the first scan to 401. /api/health is
+ * unauthenticated on purpose, so it can tell us `auth: true` without a token. */
+(async function initialAuthCheck() {
+  try {
+    const h = await (await fetch('/api/health')).json();
+    if (h.auth && !getToken()) {
+      showUnlock('This VibeScan binds beyond loopback, so /api/* needs an access token.', () => location.reload());
+      return;
+    }
+    // Only auto-load report if explicitly passed in URL query param
+    const p = new URLSearchParams(location.search);
+    const targetId = p.get('report') || p.get('id');
+    if (targetId) {
+      const rep = await (await apiFetch('/api/report/' + encodeURIComponent(targetId))).json();
+      if (rep && rep.score !== undefined) {
+        render(rep);
+        return;
+      }
+    }
+  } catch (e) { /* offline or old build — scan path will 401 and prompt instead */ }
+})();
+</script>
+</body>
+</html>

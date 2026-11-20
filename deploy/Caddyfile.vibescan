@@ -1,0 +1,65 @@
+# Caddy block for VibeScan (replace your-domain.example or set VIBESCAN_DOMAIN in deploy.sh)
+#
+# Serves the public leaderboard and scanner behind Caddy.
+#
+# Two things here are load-bearing:
+#
+#   1. `header_up X-Real-IP {remote_host}` — the ONLY address the app trusts.
+#      Caddy replaces this header on every request; a client-supplied
+#      X-Real-IP or X-Forwarded-For never reaches the app's rate limiter.
+#
+#   2. The CSP below restricts script/connect origins to `'self'` so the
+#      static UI talks only to its own origin.
+
+your-domain.example, www.your-domain.example {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-origin"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+		# All assets (including Red Hat Display and JetBrains Mono fonts) are
+		# self-hosted locally under /fonts/ and /styles.css.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+		-X-Powered-By
+		-Via
+	}
+
+	# Route: security.txt disclosure
+	handle /.well-known/security.txt {
+		header Content-Type "text/plain; charset=utf-8"
+		respond "Contact: mailto:security@example.com
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en, sl
+" 200
+	}
+
+	# www -> apex canonical redirect
+	@www host www.your-domain.example
+	redir @www https://your-domain.example{uri} 308
+
+	# Reports and job internals must never be served even if the app were
+	# misconfigured, because the static root and the API share this origin.
+	@internal path /api/report/* /api/jobs/* /data/*
+	respond @internal 404
+
+	reverse_proxy 127.0.0.1:4200 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		# X-Forwarded-For is intentionally NOT forwarded: the app does not read
+		# it, and stripping it means a client cannot smuggle a value through.
+		header_up -X-Forwarded-For
+	}
+
+	log {
+		output file /var/log/caddy/vibescan-access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+	}
+}
