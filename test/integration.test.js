@@ -15,8 +15,10 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const scanner = require('../lib/scanner');
+const deep = require('../lib/deep');
 const integrity = require('../lib/integrity');
 const leaderboard = require('../lib/leaderboard');
+const { runPageChecks } = require('../lib/scanner/scoring');
 const {
   checkSecurityHeaders,
   checkModernHeaders,
@@ -570,4 +572,85 @@ test('Modular scanner.js preserves all expected public exports', () => {
   assert.strictEqual(scanner.EXPLOIT_STEPS, scanner.EXPLOIT);
   assert.ok(scanner.egressState instanceof Map);
   assert.equal(typeof scanner._TEST_ALLOW_LOOPBACK, 'symbol');
+});
+
+test('deep.crawlSite preserves headersUnverified and runPageChecks skips header checks on crawled Firecrawl pages', async () => {
+  const rootUrl = 'https://waf-crawl.example.test/';
+  const subUrl = 'https://waf-crawl.example.test/?q=https%3A%2F%2Fexample.com%2F';
+  const mockRawRequest = async (url) => {
+    if (url === rootUrl) {
+      return {
+        url: rootUrl,
+        status: 200,
+        headers: { 'content-type': 'text/html; charset=utf-8' },
+        body: `<!DOCTYPE html><html lang="en"><head><title>Root</title></head><body><a href="${subUrl}">Sub</a></body></html>`,
+        via: 'firecrawl',
+        bypassedWaf: true,
+        headersUnverified: true,
+        wafProvider: 'Cloudflare',
+        wafStatus: 403,
+      };
+    }
+    return {
+      url: subUrl,
+      status: 200,
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+      body: '<!DOCTYPE html><html lang="en"><head><title>Sub</title></head><body><h1>Sub</h1></body></html>',
+      via: 'firecrawl',
+      bypassedWaf: true,
+      headersUnverified: true,
+      wafProvider: 'Cloudflare',
+      wafStatus: 403,
+    };
+  };
+
+  const crawl = await deep.crawlSite(rootUrl, mockRawRequest, { maxPages: 5, maxDepth: 1, concurrency: 2 });
+  assert.equal(crawl.pages.length, 2);
+  const subPage = crawl.pages.find((p) => p.url === subUrl);
+  assert.ok(subPage, 'expected subpage in crawl result');
+  assert.equal(subPage.headersUnverified, true);
+  assert.equal(subPage.via, 'firecrawl');
+  assert.equal(subPage.bypassedWaf, true);
+  assert.equal(subPage.wafProvider, 'Cloudflare');
+  assert.equal(subPage.wafStatus, 403);
+
+  const subRes = runPageChecks(subPage, { headersUnverified: true, headersHarvested: false });
+  const subIds = new Set(subRes.findings.map((f) => f.id));
+  for (const forbidden of [
+    'hdr-strict-transport-security',
+    'hdr-content-security-policy',
+    'hdr-x-content-type-options',
+    'hdr-x-frame-options',
+    'no-compression',
+    'no-cache',
+  ]) {
+    assert.ok(!subIds.has(forbidden), `crawled Firecrawl page must not emit ${forbidden}`);
+  }
+
+  const wafPageCheck = runPageChecks({
+    url: subUrl,
+    status: 403,
+    headers: { server: 'cloudflare', 'content-type': 'text/html' },
+    body: '<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>Attention Required! Cloudflare</body></html>',
+  });
+  assert.equal(wafPageCheck.findings.length, 0);
+
+  // Also verify an unharvested 403 WAF root skips crawling and marks security unverified under cap 70
+  const unharvestedWafSrv = await startFixtureServer((req, res) => {
+    res.writeHead(403, {
+      'Content-Type': 'text/html; charset=utf-8',
+      Server: 'cloudflare',
+      'CF-RAY': '12345-LJU',
+    });
+    res.end('<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>Enable JavaScript and cookies to continue</body></html>');
+  });
+  const wafReport = await scan(unharvestedWafSrv.origin, {
+    [_TEST_ALLOW_LOOPBACK]: true,
+    deep: true,
+    performance: false,
+    skipActive: true,
+  });
+  assert.equal(wafReport.degraded.scoreCap, 70);
+  assert.equal(wafReport.meta.crawledPages, 0);
+  assert.equal(wafReport.domains.security.unverified, true);
 });
