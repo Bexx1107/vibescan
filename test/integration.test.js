@@ -410,6 +410,7 @@ test('Firecrawl WAF-bypass isolation skips challenge headers and flags unverifie
     domains: {
       security: { score: 100, grade: 'A', total: 1 },
       compliance: { score: 90, grade: 'A', total: 1 },
+      performance: { score: 100, grade: 'A', total: 0 },
     },
   };
   integrity.applyDegraded(mockReport, deg);
@@ -417,6 +418,8 @@ test('Firecrawl WAF-bypass isolation skips challenge headers and flags unverifie
   assert.equal(mockReport.scoreUncapped, 94);
   assert.equal(mockReport.domains.security.score, 79);
   assert.equal(mockReport.domains.security.unverified, true);
+  assert.equal(mockReport.domains.performance.score, 100, 'verified CWV with 0 issues must stay 100');
+  assert.equal(mockReport.domains.performance.unverified, undefined, 'verified performance domain must not be marked unverified');
 });
 
 test('detectTech ignores WordPress/Vercel strings in table links or ?q= URLs while detecting real assets', () => {

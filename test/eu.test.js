@@ -286,3 +286,36 @@ test('integrity enforces scoreCap 70 and Grade C on WAF-intercepted scan', () =>
   assert.strictEqual(finding.severity, 'medium');
 });
 
+test('checkEuCompliance does not double-count single GTM tag as two high findings', () => {
+  const noCmpGtmHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <script src="https://www.googletagmanager.com/gtag/js?id=G-TEST123"></script>
+    </head>
+    <body><h1>Hello</h1></body>
+    </html>
+  `;
+  const f1 = eu.checkEuCompliance(noCmpGtmHtml, { headers: {} }, [], { trackers: ['Google Analytics'] }, {}, mk);
+  const preHighs1 = f1.filter((f) => (f.id === 'eu-no-cmp' || f.id === 'eu-pre-consent-firing') && f.severity === 'high');
+  assert.strictEqual(preHighs1.length, 1, 'expected single high finding when no CMP exists');
+  assert.strictEqual(preHighs1[0].id, 'eu-no-cmp');
+  assert.match(preHighs1[0].evidence || '', /Google Analytics \/ GTM/);
+
+  const cmpUngatedGtmHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <script src="https://www.googletagmanager.com/gtm.js?id=GTM-TEST"></script>
+    </head>
+    <body>
+      <div class="cookie-banner">We use cookies <button>Accept</button></div>
+    </body>
+    </html>
+  `;
+  const f2 = eu.checkEuCompliance(cmpUngatedGtmHtml, { headers: {} }, [], { trackers: ['Google Analytics'] }, {}, mk);
+  const firing = f2.find((f) => f.id === 'eu-pre-consent-firing');
+  assert.ok(firing, 'expected eu-pre-consent-firing when CMP banner exists yet GTM loads ungated');
+  assert.match(firing.title, /^1 tracker\(s\)/, `expected 1 tracker(s), got: ${firing.title}`);
+});
+
