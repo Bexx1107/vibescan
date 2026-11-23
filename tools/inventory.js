@@ -23,8 +23,20 @@ const add = (id, sev, title, detail, fix, file) => {
 
 const LIT = '(`(?:[^`\\\\]|\\\\.)*`|\'(?:[^\'\\\\]|\\\\.)*\'|"(?:[^"\\\\]|\\\\.)*")';
 
-for (const file of fs.readdirSync(libDir).filter((f) => f.endsWith('.js') && f !== 'queue.js')) {
-  const src = fs.readFileSync(path.join(libDir, file), 'utf8');
+const scannerDir = path.join(libDir, 'scanner');
+const sourceFiles = [
+  ...fs.readdirSync(libDir)
+    .filter((f) => f.endsWith('.js') && f !== 'queue.js')
+    .map((f) => ({ label: f, fullPath: path.join(libDir, f) })),
+  ...(fs.existsSync(scannerDir)
+    ? fs.readdirSync(scannerDir)
+        .filter((f) => f.endsWith('.js') && f !== 'knowledge.js')
+        .map((f) => ({ label: `scanner/${f}`, fullPath: path.join(scannerDir, f) }))
+    : []),
+];
+
+for (const { label: file, fullPath } of sourceFiles) {
+  const src = fs.readFileSync(fullPath, 'utf8');
 
   // factory mk*(id, severity, title, detail, fix, ev)
   const r1 = new RegExp(`\\bmk[A-Za-z]*\\(\\s*'([a-z0-9-]+)'\\s*,\\s*'([a-z]+)'\\s*,\\s*${LIT}\\s*,\\s*${LIT}\\s*,\\s*${LIT}`, 'g');

@@ -21,7 +21,7 @@ const root = path.join(__dirname, '..');
 const inv = JSON.parse(
   execFileSync(process.execPath, [path.join(__dirname, 'inventory.js'), '--json'], { maxBuffer: 1 << 26 }).toString()
 );
-const src = fs.readFileSync(path.join(root, 'lib', 'scanner.js'), 'utf8');
+const src = fs.readFileSync(path.join(root, 'lib', 'scanner', 'knowledge.js'), 'utf8');
 
 const slice = (a, b) => src.slice(src.indexOf(a), src.indexOf(b));
 const exKeys = [...slice('const EXPLAIN = {', 'const EXPLOIT = {').matchAll(/\n  '([^']+)': \{/g)].map((m) => m[1]);

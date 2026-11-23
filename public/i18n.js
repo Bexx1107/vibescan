@@ -169,6 +169,17 @@
     scanningStep4: 'Prepoznavam tehnološki sklad in orodja …',
     scanQueued: 'Čakam na prosto mesto v čakalni vrsti …',
     scanTimeoutSoft: 'To traja dlje, kot je brskalnik pripravljen čakati. Pregled se na strežniku najverjetneje še izvaja (pred nami je bil drug, počasnejši pregled) — poskusi znova čez minuto.',
+    degradedWafBadge: 'WAF · ≤{cap}',
+    degradedRenderBadge: 'Delni · ≤{cap}',
+    degradedPartialBadge: 'Nepopolno · ≤{cap}',
+    degradedUncapped: 'neomejeno: {score}',
+    degradedUnverifiedChip: 'Nepreverjeno',
+    degradedInfoAria: 'Podrobnosti o zanesljivosti ocene',
+    degradedWafTitle: 'Nepopolna analiza — WAF / Bot zaščita je prestregla pregled',
+    degradedRenderTitle: 'Delni pregled — brskalniški izris (Chromium) ni bil na voljo',
+    degradedPartialTitle: 'Nepopolna analiza — del preverjanj ni mogel teči',
+    degradedUnrunLabel: 'Nepreverjeno:',
+    degradedRetryBtn: 'Poskusi znova s polnim skeniranjem',
   };
 
   const EN = {
@@ -335,6 +346,17 @@
     scanningStep4: 'Detecting tech stack and builder artefacts …',
     scanQueued: 'Waiting for a free slot in the scan queue …',
     scanTimeoutSoft: 'This is taking longer than the browser will wait. The scan is most likely still running on the server (another, slower scan was ahead of it) — try again in a minute.',
+    degradedWafBadge: 'WAF · ≤{cap}',
+    degradedRenderBadge: 'Partial · ≤{cap}',
+    degradedPartialBadge: 'Incomplete · ≤{cap}',
+    degradedUncapped: 'uncapped: {score}',
+    degradedUnverifiedChip: 'Unverified',
+    degradedInfoAria: 'Score reliability details',
+    degradedWafTitle: 'Incomplete scan — WAF / Bot challenge intercepted crawler',
+    degradedRenderTitle: 'Partial scan — headless browser (Chromium) was unavailable',
+    degradedPartialTitle: 'Incomplete scan — some checks could not run',
+    degradedUnrunLabel: 'Checks skipped:',
+    degradedRetryBtn: 'Retry Full Scan',
   };
 
   const DICTS = { sl: SI, en: EN };

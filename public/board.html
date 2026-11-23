@@ -27,7 +27,7 @@
 <link rel="preload" href="/fonts/red-hat-display-roman-latin.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="preload" as="image" href="/hero-ribbon-mobile.webp?v=11.1" type="image/webp" media="(max-width: 768px)" fetchpriority="high" />
 <link rel="preload" as="image" href="/hero-ribbon.webp?v=11.1" type="image/webp" media="(min-width: 769px)" fetchpriority="high" />
-<link rel="stylesheet" href="/styles.css?v=15.1" />
+<link rel="stylesheet" href="/styles.css?v=15.2" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -204,6 +204,7 @@
               <span class="result-timestamp" id="resultMeta"></span>
             </div>
             <div class="result-score-lockup">
+              <div class="score-reliability-slot" id="resultReliability" hidden></div>
               <span class="result-score-big" id="resultScore">—</span>
               <span class="card-grade-badge grade-c result-grade-badge" id="resultGrade">—</span>
             </div>
@@ -530,6 +531,7 @@
             <span class="score-value-big" id="drawerScore">—</span>
             <span class="score-max-sub">/100</span>
           </div>
+          <div class="drawer-reliability-slot" id="drawerReliability" hidden></div>
         </div>
         <div class="drawer-site-meta">
           <div class="meta-row"><span class="meta-lbl">URL:</span> <a id="drawerUrl" href="#" target="_blank" rel="noopener"></a></div>
@@ -598,8 +600,8 @@
   </footer>
 </div>
 
-<script src="/i18n.js?v=15.1" defer></script>
+<script src="/i18n.js?v=15.2" defer></script>
 <script src="/icons.js?v=15.1" defer></script>
-<script src="/app.js?v=15.1" defer></script>
+<script src="/app.js?v=15.2" defer></script>
 </body>
 </html>

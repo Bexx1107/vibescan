@@ -30,6 +30,214 @@
     activeSite: null,
   };
 
+  /* ---------------- Accessible Hint Tooltips / Toggletips (MWG) ---------------- */
+
+  const ownedHintTriggers = new WeakSet();
+  let hintRuntimeInited = false;
+
+  function wireHintTooltips(root = document) {
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+    root.querySelectorAll('[interestfor]').forEach((trigger) => {
+      const targetId = trigger.getAttribute('interestfor');
+      if (!targetId) return;
+      const tip = document.getElementById(targetId);
+      if (!tip || tip.getAttribute('popover') !== 'hint') return;
+      if (!tip.hasAttribute('role')) tip.setAttribute('role', 'tooltip');
+
+      const opensOnActivate = trigger.hasAttribute('popovertarget') || trigger.hasAttribute('commandfor');
+      if (opensOnActivate && !trigger.hasAttribute('aria-expanded')) {
+        trigger.setAttribute('aria-expanded', tip.matches(':popover-open') ? 'true' : 'false');
+        ownedHintTriggers.add(trigger);
+      } else if (!opensOnActivate && !trigger.hasAttribute('aria-describedby')) {
+        trigger.setAttribute('aria-describedby', tip.id);
+      }
+    });
+  }
+
+  function initHintTooltipRuntime() {
+    if (hintRuntimeInited) return;
+    hintRuntimeInited = true;
+
+    // `toggle` does not bubble — capture on document to sync aria-expanded accurately.
+    document.addEventListener(
+      'toggle',
+      (ev) => {
+        const tip = ev.target;
+        if (!tip || !tip.id) return;
+        const expanded = ev.newState === 'open' ? 'true' : 'false';
+        document.querySelectorAll(`[interestfor="${CSS.escape(tip.id)}"]`).forEach((trigger) => {
+          if (ownedHintTriggers.has(trigger)) {
+            trigger.setAttribute('aria-expanded', expanded);
+          }
+        });
+      },
+      true
+    );
+
+    // Fallback for browsers where `popover="hint"` defaults to `manual` (e.g. Safari):
+    // upgrade active toggletips to `auto` on `beforetoggle` so click/light-dismiss/Esc close them.
+    const probe = document.createElement('div');
+    probe.popover = 'hint';
+    if (probe.popover !== 'hint') {
+      document.addEventListener(
+        'beforetoggle',
+        ({ target, newState }) => {
+          if (
+            newState === 'open' &&
+            target &&
+            target.id &&
+            target.getAttribute('popover') === 'hint' &&
+            document.querySelector(`[popovertarget="${CSS.escape(target.id)}"]`)
+          ) {
+            target.popover = 'auto';
+          }
+        },
+        true
+      );
+    }
+
+    wireHintTooltips(document);
+  }
+
+  function formatTemplate(tpl, vars) {
+    return String(tpl || '').replace(/\{([a-zA-Z0-9_]+)\}/g, (_, k) =>
+      vars && vars[k] !== undefined && vars[k] !== null ? String(vars[k]) : ''
+    );
+  }
+
+  function normalizeDegradedInfo(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+
+    // 1. Report shape (`publicReport` or full scanner report)
+    if (raw.degraded && typeof raw.degraded === 'object' && raw.degraded.degraded) {
+      const d = raw.degraded;
+      const caps = Array.isArray(d.capabilities) ? d.capabilities : [];
+      const kind =
+        d.kind ||
+        (caps.includes('waf-intercepted') || caps.includes('waf-bypass')
+          ? 'waf'
+          : caps.includes('headless-render')
+            ? 'render'
+            : 'partial');
+      return {
+        kind,
+        scoreCap: typeof d.scoreCap === 'number' ? d.scoreCap : kind === 'waf' ? 70 : 79,
+        scoreUncapped: typeof raw.scoreUncapped === 'number' ? raw.scoreUncapped : null,
+        reason: d.reason || null,
+        hint: d.hint || null,
+        unrunChecks: Array.isArray(d.unrunChecks) ? d.unrunChecks : [],
+        wafProvider: d.wafProvider || (raw.meta && raw.meta.wafProvider) || null,
+      };
+    }
+
+    if (raw.meta && raw.meta.degraded && raw.meta.degraded.degraded) {
+      return normalizeDegradedInfo({ degraded: raw.meta.degraded, scoreUncapped: raw.scoreUncapped, meta: raw.meta });
+    }
+
+    if (Array.isArray(raw.findings) && raw.findings.some((f) => f.id === 'scan-degraded')) {
+      const hasWaf = Boolean((raw.meta && raw.meta.isWafChallenge) || raw.findings.some((f) => f.id === 'waf-challenge-intercepted'));
+      return {
+        kind: hasWaf ? 'waf' : 'partial',
+        scoreCap: hasWaf ? 70 : 79,
+        scoreUncapped: typeof raw.scoreUncapped === 'number' ? raw.scoreUncapped : null,
+        reason: null,
+        hint: null,
+        unrunChecks: [],
+        wafProvider: (raw.meta && raw.meta.wafProvider) || null,
+      };
+    }
+
+    // 2. Leaderboard / site-history row shape (`{ degraded: true, degradedReason, scoreCap }`)
+    if (raw.degraded) {
+      const kind = raw.degradedReason || 'partial';
+      const capVal = typeof raw.scoreCap === 'number' ? raw.scoreCap : kind === 'waf' ? 70 : 79;
+      return {
+        kind,
+        scoreCap: capVal,
+        scoreUncapped: null,
+        reason: null,
+        hint: null,
+        unrunChecks: [],
+        wafProvider: null,
+      };
+    }
+
+    return null;
+  }
+
+  function buildReliabilityBadge(info, tipId, { showUncapped = false } = {}) {
+    if (!info) return null;
+    const isSl = window.i18n.lang() === 'sl';
+    const capVal = info.scoreCap || (info.kind === 'waf' ? 70 : 79);
+
+    let tplKey = 'degradedPartialBadge';
+    let titleKey = 'degradedPartialTitle';
+    if (info.kind === 'waf') {
+      tplKey = 'degradedWafBadge';
+      titleKey = 'degradedWafTitle';
+    } else if (info.kind === 'render') {
+      tplKey = 'degradedRenderBadge';
+      titleKey = 'degradedRenderTitle';
+    }
+
+    const label = formatTemplate(t(tplKey), { cap: capVal });
+    const wrap = el('span', 'reliability-lockup');
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `reliability-badge-btn kind-${info.kind}`;
+    btn.setAttribute('interestfor', tipId);
+    btn.setAttribute('popovertarget', tipId);
+    btn.setAttribute('popovertargetaction', 'show');
+    // WCAG 2.5.3 Label in Name: keep the visible text inside aria-label.
+    btn.setAttribute('aria-label', `${label} — ${t('degradedInfoAria')}`);
+    btn.innerHTML =
+      `<svg class="reliability-icon" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.2L14.2 13H1.8L8 2.2z"/><line x1="8" y1="6.4" x2="8" y2="9.6"/><circle cx="8" cy="11.4" r="0.6" fill="currentColor" stroke="none"/></svg>` +
+      `<span>${label}</span>`;
+    wrap.appendChild(btn);
+
+    if (showUncapped && typeof info.scoreUncapped === 'number') {
+      const uncappedText = formatTemplate(t('degradedUncapped'), { score: info.scoreUncapped });
+      wrap.appendChild(el('span', 'reliability-uncapped', `(${uncappedText})`));
+    }
+
+    // Popover placed immediately after trigger so screen reader browse order flows naturally.
+    const tip = el('div', 'reliability-popover');
+    tip.id = tipId;
+    tip.setAttribute('popover', 'hint');
+    tip.setAttribute('role', 'tooltip');
+
+    tip.appendChild(el('div', 'reliability-popover-title', t(titleKey)));
+    const defaultDesc = info.kind === 'waf'
+      ? (isSl
+          ? `Ciljna stran je pregled zavrnila z WAF / bot izzivom${info.wafProvider ? ' (' + info.wafProvider + ')' : ''}. Ocena je začasno omejena na največ ${capVal}, da delni odziv ne deluje kot polno preverjena stran.`
+          : `Target returned a WAF / bot challenge${info.wafProvider ? ' (' + info.wafProvider + ')' : ''}. The score is capped at ${capVal} so skipped checks never inflate the grade.`)
+      : info.kind === 'render'
+        ? (isSl
+            ? `Brskalniški izris (Chromium) ni bil na voljo, zato CWV in izrisana dostopnost nista mogla teči. Ocena je omejena na največ ${capVal}.`
+            : `Headless browser rendering (Chromium) was unavailable, so lab CWV and rendered accessibility did not run. The score is capped at ${capVal}.`)
+        : (isSl
+            ? `Del pregledov ni uspel teči. Ocena je omejena na največ ${capVal}.`
+            : `One or more verification passes did not complete. The score is capped at ${capVal}.`);
+    tip.appendChild(el('p', 'reliability-popover-desc', info.reason || defaultDesc));
+
+    if (typeof info.scoreUncapped === 'number') {
+      const capMeta = isSl
+        ? `Pred omejitvijo: ${info.scoreUncapped} → omejeno na ${capVal}`
+        : `Before cap: ${info.scoreUncapped} → capped at ${capVal}`;
+      tip.appendChild(el('div', 'reliability-popover-meta', capMeta));
+    }
+
+    if (info.unrunChecks && info.unrunChecks.length) {
+      tip.appendChild(
+        el('div', 'reliability-popover-meta', `${t('degradedUnrunLabel')} ${info.unrunChecks.join(', ')}`)
+      );
+    }
+
+    wrap.appendChild(tip);
+    return wrap;
+  }
+
   /* ---------------- Theme (Dark Mode Only) ---------------- */
 
   function initTheme() {
@@ -335,6 +543,7 @@
     } else {
       displayRows.forEach((r, i) => body.appendChild(siteRow(r, i + 1)));
     }
+    wireHintTooltips(body);
   }
 
   function siteRow(r, rank) {
@@ -419,16 +628,14 @@
       mainRow.appendChild(desktopBadges);
     }
 
-    // Card Right: Score Number + Grade Badge Pill
+    // Card Right: Score Number + Reliability Badge + Grade Badge Pill
     const tail = el('div', 'card-tail');
 
-    if (r.degraded) {
-      const isSl = window.i18n.lang() === 'sl';
-      const warnPill = el('span', 'card-degraded-pill', isSl ? '⚠️ Nepopolno' : '⚠️ Incomplete');
-      warnPill.title = isSl
-        ? 'Scan ni mogel preveriti vseh vsebin (omejena ocena)'
-        : 'Scan was blocked from running all checks (capped score)';
-      tail.appendChild(warnPill);
+    const degInfo = normalizeDegradedInfo(r);
+    if (degInfo) {
+      const safeId = String(r.id || rank).replace(/[^A-Za-z0-9_-]/g, '');
+      const relNode = buildReliabilityBadge(degInfo, `tip-board-${safeId}-${rank}`);
+      if (relNode) tail.appendChild(relNode);
     }
 
     tail.appendChild(el('span', 'card-score-value', String(r.score)));
@@ -488,8 +695,9 @@
       card.classList.add('expanded');
     }
 
-    // Click handler to toggle inline expansion
+    // Click handler to toggle inline expansion (ignore clicks on interactive badge/popover controls)
     card.addEventListener('click', (e) => {
+      if (e.target.closest('.reliability-badge-btn, .reliability-popover')) return;
       e.preventDefault();
       const wasExpanded = card.classList.contains('expanded');
       $$('.floating-site-card.expanded').forEach((c) => c.classList.remove('expanded'));
@@ -1048,11 +1256,8 @@
     const card = $('#result');
     card.hidden = false;
     const isSl = window.i18n.lang() === 'sl';
-    const isDegraded = Boolean(
-      report.degraded ||
-      (report.meta && report.meta.degraded && report.meta.degraded.degraded) ||
-      (report.findings && report.findings.some((f) => f.id === 'scan-degraded'))
-    );
+    const degInfo = normalizeDegradedInfo(report);
+    const isDegraded = Boolean(degInfo);
 
     // Prominent Warning Banner if scan was blocked/degraded
     const degradedBanner = $('#degradedBanner');
@@ -1061,22 +1266,43 @@
         degradedBanner.hidden = false;
         degradedBanner.textContent = '';
 
+        const headKey = degInfo.kind === 'waf'
+          ? 'degradedWafTitle'
+          : degInfo.kind === 'render'
+            ? 'degradedRenderTitle'
+            : 'degradedPartialTitle';
         const head = el('div', 'degraded-alert-head');
-        head.innerHTML = `<span>⚠️</span> <span>${
-          isSl
-            ? 'Nepopolna analiza — ciljni strežnik je začasno blokiral pregled (Bot Challenge)'
-            : 'Scan Incomplete — Target Server Blocked Crawler (Bot Challenge / Rate Limit)'
-        }</span>`;
+        const headIcon = document.createElement('span');
+        headIcon.setAttribute('aria-hidden', 'true');
+        headIcon.innerHTML = '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.2L14.2 13H1.8L8 2.2z"/><line x1="8" y1="6.4" x2="8" y2="9.6"/><circle cx="8" cy="11.4" r="0.6" fill="currentColor" stroke="none"/></svg>';
+        head.appendChild(headIcon);
+        head.appendChild(el('span', '', t(headKey)));
         degradedBanner.appendChild(head);
 
-        const body = el('div', 'degraded-alert-body');
-        body.textContent = isSl
-          ? 'Ciljni strežnik ali CDN zaščita (npr. Vercel ali Cloudflare) je samodejne zahteve za pregled označil kot sumljiv promet (HTTP 403/429) zaradi pogostih zaporednih skeniranj. Pregledi vsebine (dostopnost, piškotki, on-page SEO) niso mogli teči. Ocena je začasno omejena na 70 C in ne predstavlja končne ocene spletnega mesta.'
-          : 'The target server or CDN firewall (e.g. Vercel or Cloudflare) flagged automated crawler requests (HTTP 403/429) due to rate limiting or bot heuristics. Full content checks (accessibility, cookies, on-page SEO) could not be executed. This score is temporarily capped at 70 C and does NOT represent the true verified score of the site.';
+        const capVal = degInfo.scoreCap || (degInfo.kind === 'waf' ? 70 : 79);
+        const uncappedNote = typeof degInfo.scoreUncapped === 'number'
+          ? (isSl ? ` (neomejena ocena pred omejitvijo: ${degInfo.scoreUncapped})` : ` (uncapped pre-cap score: ${degInfo.scoreUncapped})`)
+          : '';
+        const unrunNote = degInfo.unrunChecks && degInfo.unrunChecks.length
+          ? ` ${t('degradedUnrunLabel')} ${degInfo.unrunChecks.join(', ')}.`
+          : '';
+        const bodyText = degInfo.kind === 'waf'
+          ? (isSl
+              ? `Ciljni strežnik ali WAF (${degInfo.wafProvider || 'bot zaščita'}) je prestregel samodejni pregled. Pregledi vsebine niso mogli teči, zato je končna ocena omejena na ${capVal}${uncappedNote}.${unrunNote}`
+              : `Target firewall or bot protection (${degInfo.wafProvider || 'WAF'}) intercepted the automated scan. Content checks could not run, so the final score is capped at ${capVal}${uncappedNote}.${unrunNote}`)
+          : degInfo.kind === 'render'
+            ? (isSl
+                ? `Headless Chromium izris ni bil na voljo, zato meritve hitrosti (CWV) in izrisane dostopnosti niso tekle. Ocena je omejena na ${capVal}${uncappedNote}.${unrunNote}`
+                : `Headless Chromium rendering was unavailable, so lab CWV and rendered accessibility passes did not run. The score is capped at ${capVal}${uncappedNote}.${unrunNote}`)
+            : (isSl
+                ? `Nekateri moduli za preverjanje niso mogli teči. Končna ocena je omejena na ${capVal}${uncappedNote}.${unrunNote}`
+                : `Some verification passes did not complete. The final score is capped at ${capVal}${uncappedNote}.${unrunNote}`);
+
+        const body = el('div', 'degraded-alert-body', bodyText);
         degradedBanner.appendChild(body);
 
         const actions = el('div', 'degraded-alert-actions');
-        const retryBtn = el('button', 'degraded-retry-btn', isSl ? 'Poskusi znova s polnim skeniranjem' : 'Retry Full Scan');
+        const retryBtn = el('button', 'degraded-retry-btn', t('degradedRetryBtn'));
         retryBtn.type = 'button';
         retryBtn.onclick = () => {
           $('#urlInput').value = report.finalUrl || report.target;
@@ -1104,17 +1330,25 @@
     $('#resultHost').textContent = hostClean;
     $('#resultScore').textContent = String(report.score);
 
+    const relSlot = $('#resultReliability');
+    if (relSlot) {
+      relSlot.textContent = '';
+      if (degInfo) {
+        const badgeNode = buildReliabilityBadge(degInfo, 'tip-result-hero', { showUncapped: true });
+        if (badgeNode) relSlot.appendChild(badgeNode);
+        relSlot.hidden = false;
+      } else {
+        relSlot.hidden = true;
+      }
+    }
+
     let rawGrade = (report.grade || 'C').toUpperCase();
     if (rawGrade === 'A' && report.score >= 97) rawGrade = 'A+';
     const gradeLetter = rawGrade.charAt(0).toLowerCase();
     const gradeEl = $('#resultGrade');
-    gradeEl.textContent = rawGrade + (isDegraded ? ' *' : '');
+    gradeEl.textContent = rawGrade;
     gradeEl.className = 'card-grade-badge result-grade-badge grade-' + gradeLetter;
-    if (isDegraded) {
-      gradeEl.title = isSl ? 'Nepopolna analiza (omejena ocena)' : 'Incomplete scan (capped score)';
-    } else {
-      gradeEl.removeAttribute('title');
-    }
+    gradeEl.removeAttribute('title');
 
     const dateStr = new Date(report.startedAt || Date.now()).toLocaleString(isSl ? 'sl-SI' : 'en-GB', {
       day: '2-digit',
@@ -1181,15 +1415,20 @@
     for (const key of DOMAIN_ORDER) {
       const d = (report.domains || {})[key];
       if (!d) continue;
-      const item = el('div', 'card-domain-item result-domain-card');
+      const item = el('div', 'card-domain-item result-domain-card' + (d.unverified ? ' is-unverified' : ''));
       item.dataset.domainKey = key;
       const dMeta = el('div', 'card-domain-meta');
       dMeta.appendChild(el('span', 'card-domain-name', getDomainLabel(key)));
-      dMeta.appendChild(el('span', 'card-domain-score', String(d.score)));
+      const dScoreGroup = el('span', 'card-domain-score-group');
+      if (d.unverified) {
+        dScoreGroup.appendChild(el('span', 'domain-unverified-tag', t('degradedUnverifiedChip')));
+      }
+      dScoreGroup.appendChild(el('span', 'card-domain-score', String(d.score)));
+      dMeta.appendChild(dScoreGroup);
       item.appendChild(dMeta);
 
       const track = el('div', 'card-domain-track');
-      const fill = el('div', 'card-domain-fill' + (d.score < 55 ? ' low' : d.score < 75 ? ' medium' : ''));
+      const fill = el('div', 'card-domain-fill' + (d.unverified ? ' unverified' : d.score < 55 ? ' low' : d.score < 75 ? ' medium' : ''));
       fill.style.width = Math.max(0, Math.min(100, d.score)) + '%';
       track.appendChild(fill);
       item.appendChild(track);
@@ -1200,6 +1439,8 @@
       });
       bars.appendChild(item);
     }
+
+    wireHintTooltips(card);
 
     renderLowLevelTelemetry(report);
 
@@ -1724,6 +1965,19 @@
     $('#drawerGrade').textContent = latest.grade || '—';
     $('#drawerGrade').className = 'score-grade grade-pill ' + (latest.grade || 'C');
 
+    const drawerRel = $('#drawerReliability');
+    if (drawerRel) {
+      drawerRel.textContent = '';
+      const latestDeg = normalizeDegradedInfo(latest);
+      if (latestDeg) {
+        const relNode = buildReliabilityBadge(latestDeg, 'tip-drawer-latest');
+        if (relNode) drawerRel.appendChild(relNode);
+        drawerRel.hidden = false;
+      } else {
+        drawerRel.hidden = true;
+      }
+    }
+
     $('#drawerLastScan').textContent = latest.at
       ? new Date(latest.at).toLocaleString(window.i18n.lang() === 'sl' ? 'sl-SI' : 'en-GB')
       : '—';
@@ -1793,13 +2047,19 @@
     // Score History
     const histList = $('#drawerHistoryList');
     histList.textContent = '';
-    scans.slice(0, 10).forEach((s) => {
+    scans.slice(0, 10).forEach((s, idx) => {
       const row = el('div', 'history-item');
       row.appendChild(el('span', '', new Date(s.at).toLocaleDateString()));
+      const hDeg = normalizeDegradedInfo(s);
+      if (hDeg) {
+        const tag = hDeg.kind === 'waf' ? 'WAF' : hDeg.kind === 'render' ? 'Partial' : 'Incomplete';
+        row.appendChild(el('span', 'history-degraded-tag', `${tag} · ≤${hDeg.scoreCap}`));
+      }
       row.appendChild(el('span', 'score-num-val', String(s.score)));
       row.appendChild(el('span', 'grade-pill ' + s.grade, s.grade));
       histList.appendChild(row);
     });
+    wireHintTooltips($('#siteDrawer'));
 
     // Action handlers
     $('#drawerRescanBtn').onclick = () => {
@@ -1932,6 +2192,7 @@
     }
 
     initTheme();
+    initHintTooltipRuntime();
     initScope();
     initNavLinks();
     initSubmitForm();
