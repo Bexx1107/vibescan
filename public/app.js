@@ -112,15 +112,20 @@
     if (raw.degraded && typeof raw.degraded === 'object' && raw.degraded.degraded) {
       const d = raw.degraded;
       const caps = Array.isArray(d.capabilities) ? d.capabilities : [];
+      const headersOnly =
+        caps.includes('waf-headers-unverified') &&
+        !caps.includes('waf-intercepted') &&
+        !caps.includes('waf-bypass');
       const kind =
         d.kind ||
-        (caps.includes('waf-intercepted') || caps.includes('waf-bypass')
+        (caps.includes('waf-intercepted') || caps.includes('waf-bypass') || headersOnly
           ? 'waf'
           : caps.includes('headless-render')
             ? 'render'
             : 'partial');
       return {
         kind,
+        headersOnly,
         scoreCap: typeof d.scoreCap === 'number' ? d.scoreCap : kind === 'waf' ? 70 : 79,
         scoreUncapped: typeof raw.scoreUncapped === 'number' ? raw.scoreUncapped : null,
         reason: d.reason || null,
@@ -138,6 +143,7 @@
       const hasWaf = Boolean((raw.meta && raw.meta.isWafChallenge) || raw.findings.some((f) => f.id === 'waf-challenge-intercepted'));
       return {
         kind: hasWaf ? 'waf' : 'partial',
+        headersOnly: false,
         scoreCap: hasWaf ? 70 : 79,
         scoreUncapped: typeof raw.scoreUncapped === 'number' ? raw.scoreUncapped : null,
         reason: null,
@@ -153,6 +159,7 @@
       const capVal = typeof raw.scoreCap === 'number' ? raw.scoreCap : kind === 'waf' ? 70 : 79;
       return {
         kind,
+        headersOnly: false,
         scoreCap: capVal,
         scoreUncapped: null,
         reason: null,
@@ -207,19 +214,26 @@
     tip.setAttribute('popover', 'hint');
     tip.setAttribute('role', 'tooltip');
 
-    tip.appendChild(el('div', 'reliability-popover-title', t(titleKey)));
-    const defaultDesc = info.kind === 'waf'
+    const popTitle = info.headersOnly
+      ? (isSl ? 'Nepopolna analiza — WAF je blokiral izvorne HTTP glave' : 'Partial scan — WAF blocked origin HTTP headers')
+      : t(titleKey);
+    tip.appendChild(el('div', 'reliability-popover-title', popTitle));
+    const defaultDesc = info.headersOnly
       ? (isSl
-          ? `Ciljna stran je pregled zavrnila z WAF / bot izzivom${info.wafProvider ? ' (' + info.wafProvider + ')' : ''}. Ocena je začasno omejena na največ ${capVal}, da delni odziv ne deluje kot polno preverjena stran.`
-          : `Target returned a WAF / bot challenge${info.wafProvider ? ' (' + info.wafProvider + ')' : ''}. The score is capped at ${capVal} so skipped checks never inflate the grade.`)
-      : info.kind === 'render'
+          ? `Ciljni WAF${info.wafProvider ? ' (' + info.wafProvider + ')' : ''} je blokiral neposredni zajem HTTP glav; vsebina strani je bila pregledana prek nadomestnega zajema, zato varnostne glave niso preverjene in je ocena omejena na ${capVal}.`
+          : `Target WAF${info.wafProvider ? ' (' + info.wafProvider + ')' : ''} blocked direct HTTP header capture; page content was analyzed via fallback rendering, so security headers remain unverified and the score is capped at ${capVal}.`)
+      : info.kind === 'waf'
         ? (isSl
-            ? `Brskalniški izris (Chromium) ni bil na voljo, zato CWV in izrisana dostopnost nista mogla teči. Ocena je omejena na največ ${capVal}.`
-            : `Headless browser rendering (Chromium) was unavailable, so lab CWV and rendered accessibility did not run. The score is capped at ${capVal}.`)
-        : (isSl
-            ? `Del pregledov ni uspel teči. Ocena je omejena na največ ${capVal}.`
-            : `One or more verification passes did not complete. The score is capped at ${capVal}.`);
-    tip.appendChild(el('p', 'reliability-popover-desc', info.reason || defaultDesc));
+            ? `Ciljna stran je pregled zavrnila z WAF / bot izzivom${info.wafProvider ? ' (' + info.wafProvider + ')' : ''}. Ocena je začasno omejena na največ ${capVal}, da delni odziv ne deluje kot polno preverjena stran.`
+            : `Target returned a WAF / bot challenge${info.wafProvider ? ' (' + info.wafProvider + ')' : ''}. The score is capped at ${capVal} so skipped checks never inflate the grade.`)
+        : info.kind === 'render'
+          ? (isSl
+              ? `Brskalniški izris (Chromium) ni bil na voljo, zato CWV in izrisana dostopnost nista mogla teči. Ocena je omejena na največ ${capVal}.`
+              : `Headless browser rendering (Chromium) was unavailable, so lab CWV and rendered accessibility did not run. The score is capped at ${capVal}.`)
+          : (isSl
+              ? `Del pregledov ni uspel teči. Ocena je omejena na največ ${capVal}.`
+              : `One or more verification passes did not complete. The score is capped at ${capVal}.`);
+    tip.appendChild(el('p', 'reliability-popover-desc', info.headersOnly ? defaultDesc : (info.reason || defaultDesc)));
 
     if (typeof info.scoreUncapped === 'number') {
       const capMeta = isSl
@@ -1271,12 +1285,15 @@
           : degInfo.kind === 'render'
             ? 'degradedRenderTitle'
             : 'degradedPartialTitle';
+        const headTitle = degInfo.headersOnly
+          ? (isSl ? 'Nepopolna analiza — WAF je blokiral izvorne HTTP glave' : 'Partial scan — WAF blocked origin HTTP headers')
+          : t(headKey);
         const head = el('div', 'degraded-alert-head');
         const headIcon = document.createElement('span');
         headIcon.setAttribute('aria-hidden', 'true');
         headIcon.innerHTML = '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.2L14.2 13H1.8L8 2.2z"/><line x1="8" y1="6.4" x2="8" y2="9.6"/><circle cx="8" cy="11.4" r="0.6" fill="currentColor" stroke="none"/></svg>';
         head.appendChild(headIcon);
-        head.appendChild(el('span', '', t(headKey)));
+        head.appendChild(el('span', '', headTitle));
         degradedBanner.appendChild(head);
 
         const capVal = degInfo.scoreCap || (degInfo.kind === 'waf' ? 70 : 79);
@@ -1286,17 +1303,21 @@
         const unrunNote = degInfo.unrunChecks && degInfo.unrunChecks.length
           ? ` ${t('degradedUnrunLabel')} ${degInfo.unrunChecks.join(', ')}.`
           : '';
-        const bodyText = degInfo.kind === 'waf'
+        const bodyText = degInfo.headersOnly
           ? (isSl
-              ? `Ciljni strežnik ali WAF (${degInfo.wafProvider || 'bot zaščita'}) je prestregel samodejni pregled. Pregledi vsebine niso mogli teči, zato je končna ocena omejena na ${capVal}${uncappedNote}.${unrunNote}`
-              : `Target firewall or bot protection (${degInfo.wafProvider || 'WAF'}) intercepted the automated scan. Content checks could not run, so the final score is capped at ${capVal}${uncappedNote}.${unrunNote}`)
-          : degInfo.kind === 'render'
+              ? `Ciljni WAF (${degInfo.wafProvider || 'bot zaščita'}) je blokiral neposredni zajem HTTP glav; vsebina strani je bila pregledana prek nadomestnega zajema, zato varnostne glave niso preverjene in je končna ocena omejena na ${capVal}${uncappedNote}.${unrunNote}`
+              : `Target WAF (${degInfo.wafProvider || 'bot protection'}) blocked direct HTTP header capture; page content was analyzed via fallback rendering, so origin security headers remain unverified and the score is capped at ${capVal}${uncappedNote}.${unrunNote}`)
+          : degInfo.kind === 'waf'
             ? (isSl
-                ? `Headless Chromium izris ni bil na voljo, zato meritve hitrosti (CWV) in izrisane dostopnosti niso tekle. Ocena je omejena na ${capVal}${uncappedNote}.${unrunNote}`
-                : `Headless Chromium rendering was unavailable, so lab CWV and rendered accessibility passes did not run. The score is capped at ${capVal}${uncappedNote}.${unrunNote}`)
-            : (isSl
-                ? `Nekateri moduli za preverjanje niso mogli teči. Končna ocena je omejena na ${capVal}${uncappedNote}.${unrunNote}`
-                : `Some verification passes did not complete. The final score is capped at ${capVal}${uncappedNote}.${unrunNote}`);
+                ? `Ciljni strežnik ali WAF (${degInfo.wafProvider || 'bot zaščita'}) je prestregel samodejni pregled. Pregledi vsebine niso mogli teči, zato je končna ocena omejena na ${capVal}${uncappedNote}.${unrunNote}`
+                : `Target firewall or bot protection (${degInfo.wafProvider || 'WAF'}) intercepted the automated scan. Content checks could not run, so the final score is capped at ${capVal}${uncappedNote}.${unrunNote}`)
+            : degInfo.kind === 'render'
+              ? (isSl
+                  ? `Headless Chromium izris ni bil na voljo, zato meritve hitrosti (CWV) in izrisane dostopnosti niso tekle. Ocena je omejena na ${capVal}${uncappedNote}.${unrunNote}`
+                  : `Headless Chromium rendering was unavailable, so lab CWV and rendered accessibility passes did not run. The score is capped at ${capVal}${uncappedNote}.${unrunNote}`)
+              : (isSl
+                  ? `Nekateri moduli za preverjanje niso mogli teči. Končna ocena je omejena na ${capVal}${uncappedNote}.${unrunNote}`
+                  : `Some verification passes did not complete. The final score is capped at ${capVal}${uncappedNote}.${unrunNote}`);
 
         const body = el('div', 'degraded-alert-body', bodyText);
         degradedBanner.appendChild(body);

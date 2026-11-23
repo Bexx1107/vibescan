@@ -1316,11 +1316,14 @@ html, body {
 
 /* High-Visibility Degraded / Blocked Scan Banner */
 .degraded-alert-banner {
+  position: relative;
+  z-index: 2;
   margin-bottom: 24px;
-  padding: 16px 20px;
-  background: var(--warn-soft);
-  border: 1px solid var(--warn-border);
-  border-radius: var(--radius-card-sm);
+  padding: 18px 22px;
+  background: linear-gradient(0deg, rgba(245, 158, 11, 0.10), rgba(245, 158, 11, 0.10)), #09090B;
+  border: 1.5px solid rgba(245, 158, 11, 0.45);
+  border-radius: var(--radius-card);
+  box-shadow: 0 20px 44px -12px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(251, 191, 36, 0.12);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1333,13 +1336,13 @@ html, body {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 14.5px;
-  color: var(--warn);
+  color: #FBBF24;
 }
 
 .degraded-alert-body {
   font-size: 13px;
   line-height: 1.55;
-  color: var(--text-secondary);
+  color: #E4E4E7;
 }
 
 .degraded-alert-actions {
