@@ -18,7 +18,12 @@ const scanner = require('../lib/scanner');
 const deep = require('../lib/deep');
 const integrity = require('../lib/integrity');
 const leaderboard = require('../lib/leaderboard');
-const { runPageChecks } = require('../lib/scanner/scoring');
+const {
+  runPageChecks,
+  scoreByDomain,
+  penaltyToScore,
+  MAX_LOW_PENALTY_PER_DOMAIN,
+} = require('../lib/scanner/scoring');
 const {
   checkSecurityHeaders,
   checkModernHeaders,
@@ -744,4 +749,108 @@ test('_promoteChromeHeaders upgrades unverified WAF/Firecrawl scan using real to
   ]) {
     assert.ok(!ids.has(missingHdr), `promoted Chromium headers should satisfy ${missingHdr}`);
   }
+});
+
+test('checkModernHeaders respects enforced CSP default-src fallback for object-src', () => {
+  const runCsp = (headers) => {
+    const f = [];
+    checkModernHeaders(
+      { url: 'https://example.test/', status: 200, headers, body: '' },
+      f,
+      { headersUnverified: false }
+    );
+    return f.find((x) => x.id === 'csp-no-object-src') || null;
+  };
+
+  assert.equal(runCsp({ 'content-security-policy': "default-src 'none'; script-src 'self'" }), null);
+
+  const selfOnly = runCsp({ 'content-security-policy': "default-src 'self'; script-src 'self'" });
+  assert.ok(selfOnly);
+  assert.equal(selfOnly.severity, 'low');
+
+  const multiOrigin = runCsp({ 'content-security-policy': "default-src 'self' https://cdn.example.com" });
+  assert.ok(multiOrigin);
+  assert.equal(multiOrigin.severity, 'medium');
+
+  const reportOnlyDefaultNone = runCsp({
+    'content-security-policy': "script-src 'self'",
+    'content-security-policy-report-only': "default-src 'none'",
+  });
+  assert.ok(reportOnlyDefaultNone);
+  assert.equal(reportOnlyDefaultNone.severity, 'medium');
+});
+
+test('checkCookies skips HttpOnly on CSRF/UI cookies while keeping Secure/SameSite and full session checks', () => {
+  const csrfFindings = [];
+  checkCookies(
+    {
+      url: 'https://example.test/',
+      status: 200,
+      headers: { 'set-cookie': ['anti_forgery_cookie=abc123; Path=/'] },
+      body: '',
+    },
+    csrfFindings,
+    { headersUnverified: false }
+  );
+  const csrfIds = new Set(csrfFindings.map((f) => f.id));
+  assert.ok(csrfIds.has('cookie-insecure-anti_forgery_cookie'));
+  assert.ok(csrfIds.has('cookie-samesite-anti_forgery_cookie'));
+  assert.equal(csrfIds.has('cookie-httponly-anti_forgery_cookie'), false);
+  assert.equal(csrfFindings.find((f) => f.id === 'cookie-insecure-anti_forgery_cookie').severity, 'medium');
+
+  const sidFindings = [];
+  checkCookies(
+    {
+      url: 'https://example.test/',
+      status: 200,
+      headers: { 'set-cookie': ['sid=deadbeef; Path=/'] },
+      body: '',
+    },
+    sidFindings,
+    { headersUnverified: false }
+  );
+  const sidIds = new Set(sidFindings.map((f) => f.id));
+  assert.ok(sidIds.has('cookie-insecure-sid'));
+  assert.ok(sidIds.has('cookie-httponly-sid'));
+  assert.ok(sidIds.has('cookie-samesite-sid'));
+});
+
+test('scoreByDomain and penaltyToScore cap per-domain low hygiene penalty at 15 while keeping serious findings uncapped', () => {
+  assert.equal(MAX_LOW_PENALTY_PER_DOMAIN, 15);
+
+  const tenLows = Array.from({ length: 10 }, (_, i) => ({
+    id: `low-${i}`,
+    domain: 'security',
+    severity: 'low',
+  }));
+  const d1 = scoreByDomain(tenLows);
+  assert.equal(d1.security.penalty, 15);
+  assert.equal(d1.security.score, 85);
+  assert.equal(d1.security.grade, 'B');
+  assert.equal(penaltyToScore(tenLows), 85);
+
+  const oneMedNineLows = [
+    { id: 'med-1', domain: 'security', severity: 'medium' },
+    ...Array.from({ length: 9 }, (_, i) => ({
+      id: `low-${i}`,
+      domain: 'security',
+      severity: 'low',
+    })),
+  ];
+  const d2 = scoreByDomain(oneMedNineLows);
+  assert.equal(d2.security.penalty, 23);
+  assert.equal(d2.security.score, 77);
+  assert.equal(d2.security.grade, 'C');
+
+  const complianceMix = [
+    { id: 'h-1', domain: 'compliance', severity: 'high' },
+    { id: 'h-2', domain: 'compliance', severity: 'high' },
+    { id: 'm-1', domain: 'compliance', severity: 'medium' },
+    { id: 'm-2', domain: 'compliance', severity: 'medium' },
+    { id: 'l-1', domain: 'compliance', severity: 'low' },
+  ];
+  const d3 = scoreByDomain(complianceMix);
+  assert.equal(d3.compliance.penalty, 49);
+  assert.equal(d3.compliance.score, 51);
+  assert.equal(d3.compliance.grade, 'F');
 });
