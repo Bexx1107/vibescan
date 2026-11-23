@@ -657,3 +657,91 @@ test('deep.crawlSite preserves headersUnverified and runPageChecks skips header 
   assert.equal(wafReport.meta.crawledPages, 0);
   assert.equal(wafReport.domains.security.unverified, true);
 });
+
+test('_promoteChromeHeaders upgrades unverified WAF/Firecrawl scan using real top-level Chromium CDP headers', () => {
+  const { _promoteChromeHeaders } = scanner;
+  assert.equal(typeof _promoteChromeHeaders, 'function');
+
+  const res = {
+    url: 'https://protected.example.test/',
+    status: 200,
+    via: 'firecrawl',
+    bypassedWaf: true,
+    headersUnverified: true,
+    headers: { 'content-type': 'text/html; charset=utf-8' },
+    body: '<!DOCTYPE html><html lang="en"><head><title>Protected</title></head><body><h1>Protected</h1></body></html>',
+    bytes: 95,
+    tls: { authorized: true, protocol: 'TLSv1.3', daysToExpiry: 60 },
+  };
+  const findings = [
+    { id: 'waf-headers-unverified', domain: 'security', severity: 'info', title: 'Unverified' },
+  ];
+  const meta = { headersUnverified: true, wafProvider: 'Cloudflare' };
+  const degradedCaps = [integrity.HEADERS_UNVERIFIED_CAPABILITY];
+  const degradedReasons = ['Origin HTTP headers unavailable after Cloudflare challenge bypass via Firecrawl'];
+  const peripherals = { headers: res.headers };
+
+  // Must refuse if Cloudflare challenge header is still present
+  const rejected = _promoteChromeHeaders(
+    res,
+    {
+      docStatus: 200,
+      docHeaders: { server: 'cloudflare', 'cf-mitigated': 'challenge', 'content-type': 'text/html' },
+      dom: res.body,
+    },
+    findings,
+    meta,
+    degradedCaps,
+    degradedReasons,
+    peripherals
+  );
+  assert.equal(rejected, false);
+  assert.equal(meta.headersUnverified, true);
+
+  // Must promote when Chromium received genuine HTTP 200 headers
+  const promoted = _promoteChromeHeaders(
+    res,
+    {
+      docStatus: 200,
+      docHeaders: {
+        server: 'cloudflare',
+        'content-type': 'text/html; charset=utf-8',
+        'content-encoding': 'gzip',
+        'cache-control': 'public, max-age=60',
+        'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+        'content-security-policy': "default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+        'x-content-type-options': 'nosniff',
+        'x-frame-options': 'SAMEORIGIN',
+        'referrer-policy': 'strict-origin-when-cross-origin',
+        'permissions-policy': 'camera=(), microphone=(), geolocation=()',
+      },
+      dom: res.body,
+    },
+    findings,
+    meta,
+    degradedCaps,
+    degradedReasons,
+    peripherals
+  );
+  assert.equal(promoted, true);
+  assert.equal(meta.headersVerifiedViaChrome, true);
+  assert.equal(meta.headersUnverified, false);
+  assert.equal(res.headersUnverified, false);
+  assert.equal(degradedCaps.length, 0);
+  assert.equal(degradedReasons.length, 0);
+
+  const ids = new Set(findings.map((f) => f.id));
+  assert.ok(!ids.has('waf-headers-unverified'), 'waf-headers-unverified must be removed once headers are promoted');
+  for (const missingHdr of [
+    'hdr-strict-transport-security',
+    'hdr-content-security-policy',
+    'hdr-x-content-type-options',
+    'hdr-x-frame-options',
+    'hdr-referrer-policy',
+    'hdr-permissions-policy',
+    'no-compression',
+    'no-cache',
+  ]) {
+    assert.ok(!ids.has(missingHdr), `promoted Chromium headers should satisfy ${missingHdr}`);
+  }
+});

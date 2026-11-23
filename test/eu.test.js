@@ -319,3 +319,29 @@ test('checkEuCompliance does not double-count single GTM tag as two high finding
   assert.match(firing.title, /^1 tracker\(s\)/, `expected 1 tracker(s), got: ${firing.title}`);
 });
 
+test('checkA11yRendered keeps near-threshold AA contrast misses at medium while severe drops escalate to high', () => {
+  const a11y = require('../lib/a11y');
+  const html = '<!DOCTYPE html><html lang="en"><head><title>Contrast</title></head><body><main><h1>Hi</h1></main></body></html>';
+  const mkViolations = (ratio) =>
+    Array.from({ length: 12 }, (_, i) => ({
+      ratio,
+      need: 4.5,
+      fontSize: 14,
+      fg: 'rgb(58,113,216)',
+      bg: 'rgb(240,248,255)',
+      text: `Link ${i + 1}`,
+      selector: `table > tr:nth-of-type(${i + 1}) > th > a`,
+      html: `<a href="/q${i}">Link ${i + 1}</a>`,
+    }));
+
+  const mildFindings = a11y.checkA11yRendered(html, { checked: 19, violations: mkViolations(4.32) }, [], {}, mk);
+  const mild = mildFindings.find((f) => f.id === 'a11y-contrast');
+  assert.ok(mild, 'expected a11y-contrast for 4.32:1');
+  assert.strictEqual(mild.severity, 'medium', 'near-threshold (>= 4.0:1) AA contrast misses should be medium');
+
+  const severeFindings = a11y.checkA11yRendered(html, { checked: 19, violations: mkViolations(2.5) }, [], {}, mk);
+  const severe = severeFindings.find((f) => f.id === 'a11y-contrast');
+  assert.ok(severe, 'expected a11y-contrast for 2.5:1');
+  assert.strictEqual(severe.severity, 'high', 'systemic severe contrast failure (< 4.0:1 across >= 8 elements) must remain high');
+});
+
