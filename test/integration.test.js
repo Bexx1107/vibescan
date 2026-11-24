@@ -854,3 +854,35 @@ test('scoreByDomain and penaltyToScore cap per-domain low hygiene penalty at 15 
   assert.equal(d3.compliance.score, 51);
   assert.equal(d3.compliance.grade, 'F');
 });
+
+test('normalizeFirecrawlMapLinks unwraps v2 link objects, deduplicates URLs, and handles legacy strings', () => {
+  const normalized = deep.normalizeFirecrawlMapLinks([
+    { url: 'https://example.test/', title: 'Home', description: 'Main page' },
+    { url: ' https://example.test/about ', title: 'About' },
+    { url: 'https://example.test/', title: 'Duplicate Home' },
+    'https://example.test/pricing',
+    'https://example.test/pricing',
+    { title: 'Missing URL' },
+    null,
+    '',
+    42,
+  ]);
+  assert.deepEqual(normalized, [
+    'https://example.test/',
+    'https://example.test/about',
+    'https://example.test/pricing',
+  ]);
+  assert.deepEqual(deep.normalizeFirecrawlMapLinks(null), []);
+});
+
+test('Firecrawl adapters target v2 endpoints with maxAge: 0 and zero v1 paths', () => {
+  const httpSrc = fs.readFileSync(path.join(__dirname, '..', 'lib', 'scanner', 'http.js'), 'utf8');
+  const deepSrc = fs.readFileSync(path.join(__dirname, '..', 'lib', 'deep.js'), 'utf8');
+
+  assert.match(httpSrc, /['"]\/v2\/scrape['"]/);
+  assert.match(httpSrc, /maxAge:\s*0/);
+  assert.doesNotMatch(httpSrc, /\/v1\/scrape/);
+
+  assert.match(deepSrc, /['"]\/v2\/map['"]/);
+  assert.doesNotMatch(deepSrc, /\/v1\/map/);
+});
